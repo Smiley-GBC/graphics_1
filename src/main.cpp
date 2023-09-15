@@ -102,35 +102,75 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
-    };
+    //float vertices[] = {
+    //    -0.5f, -0.5f, 0.0f, // left  
+    //     0.5f, -0.5f, 0.0f, // right 
+    //     0.0f,  0.5f, 0.0f  // top   
+    //};
+    //
+    //float colors[] = {
+    //    1.0f, 0.0f, 0.0f,   // red
+    //    0.0f, 1.0f, 0.0f,   // green
+    //    0.0f, 0.0f, 1.0f    // blue
+    //};
 
-    float colors[] = {
-        1.0f, 0.0f, 0.0f,   // red
-        0.0f, 1.0f, 0.0f,   // green
-        0.0f, 0.0f, 1.0f    // blue
+    // Non-interleaved
+    //float data[] = {
+    //    -0.5f, -0.5f, 0.0f, // left  
+    //    0.5f, -0.5f, 0.0f,  // right 
+    //    0.0f,  0.5f, 0.0f,  // top
+    //
+    //    1.0f, 0.0f, 0.0f,   // red
+    //    0.0f, 1.0f, 0.0f,   // green
+    //    0.0f, 0.0f, 1.0f    // blue
+    //};
+
+    // Interleaved
+    float dataInterleaved[] = {
+        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f
     };
 
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    GLuint vao, vboPos, vboCol;
+    //GLuint vao, vboPos, vboCol;
+    GLuint vao, vbo;
     glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vboPos);
-    glGenBuffers(1, &vboCol);
+    //glGenBuffers(1, &vboPos);
+    //glGenBuffers(1, &vboCol);
+    glGenBuffers(1, &vbo);
     glBindVertexArray(vao);
 
+    // Data-description procedure:
     // 1. Bind buffer. 2. Upload buffer data. 3. Enable buffer index. 4. Describe buffer data
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboCol);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // Original:
+    //glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //glEnableVertexAttribArray(0);
+    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    //
+    //glBindBuffer(GL_ARRAY_BUFFER, vboCol);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(1);
+
+    // Non-interleaved:
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+    //glEnableVertexAttribArray(0);
+    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(1);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(9 * sizeof(float)));
+    
+    // Interleaved:
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(dataInterleaved), dataInterleaved, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     // Unbind current array so we don't accidentally write to it
     glBindVertexArray(0);
@@ -165,7 +205,9 @@ int main()
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vboPos);
+    //glDeleteBuffers(1, &vboPos);
+    //glDeleteBuffers(1, &vboCol);
+    glDeleteBuffers(1, &vbo);
     glDeleteProgram(shaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
