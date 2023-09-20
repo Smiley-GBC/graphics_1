@@ -103,13 +103,9 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float data[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f,  // top
-
-        1.0f, 0.0f, 0.0f,   // red
-        0.0f, 1.0f, 0.0f,   // green
-        0.0f, 0.0f, 1.0f    // blue
+        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,   // red
+         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // green
+         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f    // blue
     };
 
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -126,10 +122,10 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(9 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
     // Unbind current array so we don't accidentally write to it
     glBindVertexArray(0);
