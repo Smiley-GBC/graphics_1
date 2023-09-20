@@ -101,6 +101,10 @@ int main()
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
 
+    // Once you've made your shader program, you can access dynamic variables ("uniform" variables) via GetUniformLocation
+    GLint uColor = glGetUniformLocation(shaderProgram, "u_color");
+    GLint uTime = glGetUniformLocation(shaderProgram, "u_time");
+
     // check for linking errors
     int success;
     char infoLog[512];
@@ -184,12 +188,18 @@ int main()
         // input
         // -----
         OnInput(window);
+        std::cout << glfwGetTime() << std::endl;
+
+        // Send normalized cosine:
+        float n = cosf(glfwGetTime()) * 0.5f + 0.5f;
+        glUniform1f(uTime, n);
 
         switch (state)
         {
         case OBJ_1:
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glBindVertexArray(vaoWhite);
+            glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
             break;
         
         case OBJ_2:
