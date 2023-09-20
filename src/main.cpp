@@ -2,6 +2,9 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
@@ -10,24 +13,55 @@ void OnInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 aCol;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"   color = aCol;\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
+GLuint CreateShader(GLint type, const char* path)
+{
+    GLuint shader = 0;
+    try
+    {
+        // Load text file
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        file.open(path);
 
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"in vec3 color;\n"
-"void main()\n"
-"{\n"
-"   //FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"   FragColor = vec4(color, 1.0f);\n"
-"}\n\0";
+        // Interpret the file as a giant string
+        std::stringstream stream;
+        stream << file.rdbuf();
+        file.close();
+
+        // Compile text as a shader
+        std::string str = stream.str();
+        const char* src = str.c_str();
+        shader = glCreateShader(type);
+        glShaderSource(shader, 1, &src, NULL);
+        glCompileShader(shader);
+
+        // Check for compilation errors
+        GLint success;
+        GLchar infoLog[512];
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(shader, 512, NULL, infoLog);
+            std::cout << "Shader failed to compile: \n" << infoLog << std::endl;
+        }
+    }
+    catch (std::ifstream::failure& e)
+    {
+        std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
+        // Alternatively, you can replace the above line with "throw;" to crash your program if a shader fails to load
+        //throw;
+    }
+    return shader;
+}
+
+enum State
+{
+    OBJ_1,
+    OBJ_2,
+    OBJ_3,
+    OBJ_4,
+    OBJ_5,
+} state;
 
 int main()
 {
@@ -58,40 +92,18 @@ int main()
         return -1;
     }
 
-    // build and compile our shader program
-    // ------------------------------------
-    // vertex shader
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
+    GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/test.vert");
+    GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/test.frag");
 
     // link shaders
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
+
     // check for linking errors
+    int success;
+    char infoLog[512];
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
@@ -149,9 +161,32 @@ int main()
         // -----
         OnInput(window);
 
+        switch (state)
+        {
+        case OBJ_1:
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            break;
+        
+        case OBJ_2:
+            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            break;
+        
+        case OBJ_3:
+            glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+            break;
+        
+        case OBJ_4:
+            glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+            break;
+        
+        case OBJ_5:
+            glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+            break;
+        }
+
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw our first triangle
@@ -184,6 +219,21 @@ void OnInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+        state = OBJ_1;
+    
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+        state = OBJ_2;
+    
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+        state = OBJ_3;
+    
+    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+        state = OBJ_4;
+    
+    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+        state = OBJ_5;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
