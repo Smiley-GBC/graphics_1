@@ -127,9 +127,9 @@ int main()
     };
 
     float white[] = {
-        1.0f, 1.0f, 1.0f,   // red
-        1.0f, 1.0f, 1.0f,   // green
-        1.0f, 1.0f, 1.0f    // blue
+        1.0f, 1.0f, 1.0f,   // white
+        1.0f, 1.0f, 1.0f,   // white
+        1.0f, 1.0f, 1.0f    // white
     };
 
     // For different renders we'll need different vertex data, so we'll need multiple vertex array objects!
@@ -161,7 +161,8 @@ int main()
     // White:
     glBindVertexArray(vaoWhite);
     glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // Uploading a 2nd time is unnecessary.
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
