@@ -120,30 +120,53 @@ int main()
          0.0f,  0.5f, 0.0f  // top   
     };
     
-    float colors[] = {
+    float rainbow[] = {
         1.0f, 0.0f, 0.0f,   // red
         0.0f, 1.0f, 0.0f,   // green
         0.0f, 0.0f, 1.0f    // blue
     };
 
+    float white[] = {
+        1.0f, 1.0f, 1.0f,   // red
+        1.0f, 1.0f, 1.0f,   // green
+        1.0f, 1.0f, 1.0f    // blue
+    };
+
+    // For different renders we'll need different vertex data, so we'll need multiple vertex array objects!
+    GLuint vaoRainbow, vaoWhite;
+
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    GLuint vao, vboPos, vboCol;
-    glGenVertexArrays(1, &vao);
+    GLuint vboPos, vboRainbow, vboWhite;
+    glGenVertexArrays(1, &vaoRainbow);
+    glGenVertexArrays(1, &vaoWhite);
     glGenBuffers(1, &vboPos);
-    glGenBuffers(1, &vboCol);
-    glBindVertexArray(vao);
+    glGenBuffers(1, &vboRainbow);
+    glGenBuffers(1, &vboWhite);
 
-    // Data-description procedure:
-    // 1. Bind buffer. 2. Upload buffer data. 3. Enable buffer index. 4. Describe buffer data
-
-    // Original:
+    // Rainbow:
+    glBindVertexArray(vaoRainbow);
     glBindBuffer(GL_ARRAY_BUFFER, vboPos);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     
-    glBindBuffer(GL_ARRAY_BUFFER, vboCol);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vboRainbow);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(rainbow), rainbow, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    // Unbind current array so we don't accidentally write to it
+    glBindVertexArray(0);
+
+    // White:
+    glBindVertexArray(vaoWhite);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(white), white, GL_STATIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
@@ -165,10 +188,12 @@ int main()
         {
         case OBJ_1:
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glBindVertexArray(vaoWhite);
             break;
         
         case OBJ_2:
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            glBindVertexArray(vaoRainbow);
             break;
         
         case OBJ_3:
@@ -191,7 +216,7 @@ int main()
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        glBindVertexArray(vao);
+        //glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -202,9 +227,11 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &vao);
+    glDeleteVertexArrays(1, &vaoRainbow);
+    glDeleteVertexArrays(1, &vaoWhite);
     glDeleteBuffers(1, &vboPos);
-    glDeleteBuffers(1, &vboCol);
+    glDeleteBuffers(1, &vboRainbow);
+    glDeleteBuffers(1, &vboWhite);
     glDeleteProgram(shaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
