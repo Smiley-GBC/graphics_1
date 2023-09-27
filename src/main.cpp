@@ -188,7 +188,6 @@ int main()
         // input
         // -----
         OnInput(window);
-        std::cout << glfwGetTime() << std::endl;
 
         // Send normalized cosine:
         float n = cosf(glfwGetTime()) * 0.5f + 0.5f;
