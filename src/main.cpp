@@ -104,6 +104,7 @@ int main()
     // Once you've made your shader program, you can access dynamic variables ("uniform" variables) via GetUniformLocation
     GLint uColor = glGetUniformLocation(shaderProgram, "u_color");
     GLint uTime = glGetUniformLocation(shaderProgram, "u_time");
+    GLint uTime2 = glGetUniformLocation(shaderProgram, "u_time2");
 
     // check for linking errors
     int success;
@@ -192,6 +193,7 @@ int main()
         // Send normalized cosine:
         float n = cosf(glfwGetTime()) * 0.5f + 0.5f;
         glUniform1f(uTime, n);
+        glUniform1f(uTime2, n * 2.0f - 1.0f);
 
         switch (state)
         {
