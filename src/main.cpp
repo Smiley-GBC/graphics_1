@@ -54,6 +54,26 @@ GLuint CreateShader(GLint type, const char* path)
     return shader;
 }
 
+GLuint CreateProgram(GLuint vs, GLuint fs)
+{
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vs);
+    glAttachShader(shaderProgram, fs);
+    glLinkProgram(shaderProgram);
+
+    // Check for linking errors
+    int success;
+    char infoLog[512];
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        shaderProgram = GL_NONE;
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    }
+
+    return shaderProgram;
+}
+
 enum State
 {
     OBJ_1,
@@ -98,26 +118,13 @@ int main()
     GLuint vsX = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Horizontal.vert");
     GLuint vsY = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Vertical.vert");
 
-    // link shaders
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vsY);
-    glAttachShader(shaderProgram, fsDefault);
-    glLinkProgram(shaderProgram);
+    // A project for off-camera...............
+    //GLuint fsColor = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Color.frag");
+    //GLuint fsColorFaded = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/ColorFaded.frag");
 
-    // Once you've made your shader program, you can access dynamic variables ("uniform" variables) via GetUniformLocation
-    GLint uColor = glGetUniformLocation(shaderProgram, "u_color");
-    GLint uTime = glGetUniformLocation(shaderProgram, "u_time");
-
-    // check for linking errors
-    int success;
-    char infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vsDefault);
-    glDeleteShader(fsDefault);
+    GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
+    GLuint shaderX = CreateProgram(vsX, fsDefault);
+    GLuint shaderY = CreateProgram(vsY, fsDefault);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -192,42 +199,56 @@ int main()
         // -----
         OnInput(window);
 
-        glUniform1f(uTime, cosf(glfwGetTime()));
+        // In order to use uniforms, we must retrieve their locations from shaders,
+        // so we will retrieve the locations from whichever shader we bind:
+
+        GLuint shader = shaderDefault;
+        GLuint vertexData = vaoWhite;
+        float r, g, b;
+        r = g = b = 0.0f;
 
         switch (state)
         {
         case OBJ_1:
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glBindVertexArray(vaoWhite);
-            glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+            shader = shaderDefault;
+            vertexData = vaoWhite;
+            r = g = b = 0.0f;
             break;
-        
+
         case OBJ_2:
-            glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-            glBindVertexArray(vaoRainbow);
+            shader = shaderX;
+            vertexData = vaoRainbow;
+            r = g = b = 1.0f;
             break;
-        
+
         case OBJ_3:
-            glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+            shader = shaderY;
+            vertexData = vaoRainbow;
+            r = 1.0f;
             break;
-        
+
         case OBJ_4:
-            glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+            g = 1.0f;
             break;
-        
+
         case OBJ_5:
-            glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+            b = 1.0f;
             break;
         }
 
+        GLint uColor = glGetUniformLocation(shader, "u_color");
+        GLint uTime = glGetUniformLocation(shader, "u_time");
+        glUniform1f(uTime, cosf(glfwGetTime()));
+        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+
         // render
         // ------
-        //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(r, g, b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw our first triangle
-        glUseProgram(shaderProgram);
-        //glBindVertexArray(vao);
+        glUseProgram(shader);
+        glBindVertexArray(vertexData);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -243,7 +264,7 @@ int main()
     glDeleteBuffers(1, &vboPos);
     glDeleteBuffers(1, &vboRainbow);
     glDeleteBuffers(1, &vboWhite);
-    glDeleteProgram(shaderProgram);
+    glDeleteProgram(shaderDefault);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
