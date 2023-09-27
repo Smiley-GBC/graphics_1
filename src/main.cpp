@@ -92,19 +92,21 @@ int main()
         return -1;
     }
 
-    GLuint vertexShader = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/test.vert");
-    GLuint fragmentShader = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/test.frag");
+    GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Default.vert");
+    GLuint fsDefault = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Default.frag");
+
+    GLuint vsX = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Horizontal.vert");
+    GLuint vsY = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Vertical.vert");
 
     // link shaders
     GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
+    glAttachShader(shaderProgram, vsY);
+    glAttachShader(shaderProgram, fsDefault);
     glLinkProgram(shaderProgram);
 
     // Once you've made your shader program, you can access dynamic variables ("uniform" variables) via GetUniformLocation
     GLint uColor = glGetUniformLocation(shaderProgram, "u_color");
     GLint uTime = glGetUniformLocation(shaderProgram, "u_time");
-    GLint uTime2 = glGetUniformLocation(shaderProgram, "u_time2");
 
     // check for linking errors
     int success;
@@ -114,8 +116,8 @@ int main()
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    glDeleteShader(vsDefault);
+    glDeleteShader(fsDefault);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -190,10 +192,7 @@ int main()
         // -----
         OnInput(window);
 
-        // Send normalized cosine:
-        float n = cosf(glfwGetTime()) * 0.5f + 0.5f;
-        glUniform1f(uTime, n);
-        glUniform1f(uTime2, n * 2.0f - 1.0f);
+        glUniform1f(uTime, cosf(glfwGetTime()));
 
         switch (state)
         {
