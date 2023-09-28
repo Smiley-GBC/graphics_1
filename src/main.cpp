@@ -175,6 +175,12 @@ int main()
         1.0f, 1.0f, 1.0f    // white
     };
 
+    float red[] = {
+        1.0f, 0.0f, 0.0f,   // red
+        1.0f, 0.0f, 0.0f,   // red
+        1.0f, 0.0f, 0.0f    // red
+    };
+
     // Generate vertex buffers (data)
     // Generate vertex arrays (collections + descriptions of vertex buffers)
     GLuint vaoRainbow, vaoWhite;
@@ -219,6 +225,8 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
+    // Unbind the vao to ensure no accidental associations are made
+    glBindVertexArray(GL_NONE);
     float prev = glfwGetTime();
     float curr = prev;
 
@@ -245,6 +253,11 @@ int main()
         case OBJ_1:
             shader = shaderDefault;
             vertexData = vaoWhite;
+
+            // glVertexAttribPointer makes the association between the bound vbo and bound vao.
+            // Once the association has been made, vbos can be modified independent of vaos.
+            glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(red), red);
             break;
 
         case OBJ_2:
