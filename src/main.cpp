@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "Math.h"
 
 #include <iostream>
 #include <fstream>
@@ -117,6 +118,7 @@ int main()
 
     GLuint vsX = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Horizontal.vert");
     GLuint vsY = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Vertical.vert");
+    GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
 
     // A project for off-camera...............
     //GLuint fsColor = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Color.frag");
@@ -125,6 +127,7 @@ int main()
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
     GLuint shaderX = CreateProgram(vsX, fsDefault);
     GLuint shaderY = CreateProgram(vsY, fsDefault);
+    GLuint shaderTransform = CreateProgram(vsTransform, fsDefault);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -191,10 +194,17 @@ int main()
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    float prev = glfwGetTime();
+    float curr = prev;
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        float dt = curr - prev, tt = glfwGetTime();
+        prev = curr;
+        curr = tt;
+
         // input
         // -----
         OnInput(window);
@@ -210,7 +220,7 @@ int main()
         switch (state)
         {
         case OBJ_1:
-            shader = shaderDefault;
+            shader = shaderTransform;
             vertexData = vaoWhite;
             r = g = b = 0.0f;
             break;
@@ -238,8 +248,17 @@ int main()
 
         GLint uColor = glGetUniformLocation(shader, "u_color");
         GLint uTime = glGetUniformLocation(shader, "u_time");
-        glUniform1f(uTime, cosf(glfwGetTime()));
+        GLint uTransform = glGetUniformLocation(shader, "u_transform");
+        glUniform1f(uTime, cosf(tt));
         glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+
+        float ncos = cosf(tt) * 0.5f + 0.5f;
+        float nsin = sinf(tt) * 0.5f + 0.5f;
+        Matrix scale = Scale(ncos, ncos, 0.0f);
+        Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f);
+        Matrix translation = Translate(cosf(tt), 0.0f, 0.0f);
+        Matrix transform = scale * rotation * translation;
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &transform.m0);
 
         // render
         // ------
