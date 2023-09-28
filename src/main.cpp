@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cassert>
 
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
@@ -13,6 +14,14 @@ void OnInput(GLFWwindow* window);
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+struct Color
+{
+    float r = 0.0f;
+    float g = 0.0f;
+    float b = 0.0f;
+    float a = 0.0f;
+};
 
 GLuint CreateShader(GLint type, const char* path)
 {
@@ -28,6 +37,22 @@ GLuint CreateShader(GLint type, const char* path)
         std::stringstream stream;
         stream << file.rdbuf();
         file.close();
+
+        // Verify shader type matches shader file extension
+        const char* ext = strrchr(path, '.');
+        switch (type)
+        {
+            case GL_VERTEX_SHADER:
+                assert(strcmp(ext, ".vert") == 0);
+                break;
+
+            case GL_FRAGMENT_SHADER:
+                assert(strcmp(ext, ".frag") == 0);
+                break;
+        default:
+            assert(false, "Invalid shader type");
+            break;
+        }
 
         // Compile text as a shader
         std::string str = stream.str();
@@ -116,18 +141,19 @@ int main()
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Default.vert");
     GLuint fsDefault = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Default.frag");
 
-    GLuint vsX = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Horizontal.vert");
-    GLuint vsY = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Vertical.vert");
+    GLuint vsAnimate = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Animate.vert");
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
 
     // A project for off-camera...............
-    //GLuint fsColor = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Color.frag");
-    //GLuint fsColorFaded = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/ColorFaded.frag");
+    GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
+    GLuint fsColorFade = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/ColorFaded.frag");
 
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
-    GLuint shaderX = CreateProgram(vsX, fsDefault);
-    GLuint shaderY = CreateProgram(vsY, fsDefault);
-    GLuint shaderTransform = CreateProgram(vsTransform, fsDefault);
+    GLuint shaderDefaultColor = CreateProgram(vsDefault, fsColorFade);
+    GLuint shaderDefaultFade = CreateProgram(vsDefault, fsColorFade);
+
+    GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
+    GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -209,48 +235,48 @@ int main()
         // -----
         OnInput(window);
 
-        // In order to use uniforms, we must retrieve their locations from shaders,
-        // so we will retrieve the locations from whichever shader we bind:
-
+        // Declair common render attribute beforehand, then assign based on object!
         GLuint shader = shaderDefault;
         GLuint vertexData = vaoWhite;
-        float r, g, b;
-        r = g = b = 0.0f;
+        Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
+        Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
 
         switch (state)
         {
         case OBJ_1:
-            shader = shaderTransform;
+            shader = shaderDefault;
             vertexData = vaoWhite;
-            r = g = b = 0.0f;
             break;
 
         case OBJ_2:
-            shader = shaderX;
+            shader = shaderDefault;
             vertexData = vaoRainbow;
-            r = g = b = 1.0f;
             break;
 
         case OBJ_3:
-            shader = shaderY;
+            shader = shaderDefaultFade;
             vertexData = vaoRainbow;
-            r = 1.0f;
             break;
 
         case OBJ_4:
-            g = 1.0f;
+            shader = shaderAnimate;
+            vertexData = vaoRainbow;
+            tint.r = cosf(tt * 2.0f * PI) * 0.5f + 0.5f;
+            tint.g = cosf(tt * 2.0f * PI * 0.333f) * 0.5f + 0.5f;
+            tint.b = cosf(tt * 2.0f * PI * 0.666f) * 0.5f + 0.5f;
             break;
 
         case OBJ_5:
-            b = 1.0f;
+            shader = shaderTransform;
+            vertexData = vaoRainbow;
             break;
         }
 
         GLint uColor = glGetUniformLocation(shader, "u_color");
         GLint uTime = glGetUniformLocation(shader, "u_time");
         GLint uTransform = glGetUniformLocation(shader, "u_transform");
-        glUniform1f(uTime, cosf(tt));
-        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        glUniform1f(uTime, tt);
+        glUniform3f(uColor, tint.r, tint.g, tint.b);
 
         float ncos = cosf(tt) * 0.5f + 0.5f;
         float nsin = sinf(tt) * 0.5f + 0.5f;
@@ -262,7 +288,7 @@ int main()
 
         // render
         // ------
-        glClearColor(r, g, b, 1.0f);
+        glClearColor(bg.r, bg.g, bg.b, bg.a);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw our first triangle
