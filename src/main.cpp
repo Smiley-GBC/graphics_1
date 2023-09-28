@@ -144,12 +144,11 @@ int main()
     GLuint vsAnimate = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Animate.vert");
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
 
-    // A project for off-camera...............
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
     GLuint fsColorFade = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/ColorFaded.frag");
 
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
-    GLuint shaderDefaultColor = CreateProgram(vsDefault, fsColorFade);
+    GLuint shaderDefaultColor = CreateProgram(vsDefault, fsColor);
     GLuint shaderDefaultFade = CreateProgram(vsDefault, fsColorFade);
 
     GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
