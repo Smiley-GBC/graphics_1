@@ -154,9 +154,10 @@ int main()
     GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
+    // See https://learnopengl.com/Advanced-OpenGL/Face-culling for more info!
+    glEnable(GL_CULL_FACE); // Disabled by default
+    glCullFace(GL_BACK);    // GL_BACK by default
+    glFrontFace(GL_CCW);    // GL_CCW by default
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
