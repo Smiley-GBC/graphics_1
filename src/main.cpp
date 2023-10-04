@@ -42,13 +42,13 @@ GLuint CreateShader(GLint type, const char* path)
         const char* ext = strrchr(path, '.');
         switch (type)
         {
-            case GL_VERTEX_SHADER:
-                assert(strcmp(ext, ".vert") == 0);
-                break;
+        case GL_VERTEX_SHADER:
+            assert(strcmp(ext, ".vert") == 0);
+            break;
 
-            case GL_FRAGMENT_SHADER:
-                assert(strcmp(ext, ".frag") == 0);
-                break;
+        case GL_FRAGMENT_SHADER:
+            assert(strcmp(ext, ".frag") == 0);
+            break;
         default:
             assert(false, "Invalid shader type");
             break;
@@ -161,7 +161,17 @@ int main()
          0.5f, -0.5f, 0.0f, // right 
          0.0f,  0.5f, 0.0f  // top   
     };
-    
+
+    float tri2[] = {
+         0.5f, 0.0f, 0.0f,  // right 
+        -0.5f, 0.0f, 0.0f,  // left  
+         0.0f,  0.5f, 0.0f,  // top
+
+         0.5f, 0.0f, 0.0f,  // right 
+         -0.5f, 0.0f, 0.0f, // left  
+         0.0f,  -0.5f, 0.0f, // bot
+    };
+
     float rainbow[] = {
         1.0f, 0.0f, 0.0f,   // red
         0.0f, 1.0f, 0.0f,   // green
@@ -169,6 +179,10 @@ int main()
     };
 
     float white[] = {
+        1.0f, 1.0f, 1.0f,   // white
+        1.0f, 1.0f, 1.0f,   // white
+        1.0f, 1.0f, 1.0f,   // white
+
         1.0f, 1.0f, 1.0f,   // white
         1.0f, 1.0f, 1.0f,   // white
         1.0f, 1.0f, 1.0f    // white
@@ -183,16 +197,20 @@ int main()
     // Generate vertex buffers (data)
     // Generate vertex arrays (collections + descriptions of vertex buffers)
     GLuint vaoRainbow, vaoWhite;
-    GLuint vboPos, vboRainbow, vboWhite;
+    GLuint vboPos, vboPos2, vboRainbow, vboWhite;
     glGenVertexArrays(1, &vaoRainbow);
     glGenVertexArrays(1, &vaoWhite);
     glGenBuffers(1, &vboPos);
+    glGenBuffers(1, &vboPos2);
     glGenBuffers(1, &vboRainbow);
     glGenBuffers(1, &vboWhite);
 
     // Upload position
     glBindBuffer(GL_ARRAY_BUFFER, vboPos);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tri2), tri2, GL_STATIC_DRAW);
 
     // Upload white
     glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
@@ -218,7 +236,7 @@ int main()
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
@@ -305,7 +323,7 @@ int main()
         // draw our first triangle
         glUseProgram(shader);
         glBindVertexArray(vertexData);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -338,16 +356,16 @@ void OnInput(GLFWwindow* window)
 
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
         state = OBJ_1;
-    
+
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
         state = OBJ_2;
-    
+
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
         state = OBJ_3;
-    
+
     if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
         state = OBJ_4;
-    
+
     if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
         state = OBJ_5;
 }
