@@ -154,6 +154,10 @@ int main()
     GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
+
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
@@ -163,13 +167,13 @@ int main()
     };
 
     float tri2[] = {
-         0.5f, 0.0f, 0.0f,  // right 
         -0.5f, 0.0f, 0.0f,  // left  
-         0.0f,  0.5f, 0.0f,  // top
+         0.5f, 0.0f, 0.0f,  // right 
+         0.0f, 0.5f, 0.0f,  // top
 
          0.5f, 0.0f, 0.0f,  // right 
          -0.5f, 0.0f, 0.0f, // left  
-         0.0f,  -0.5f, 0.0f, // bot
+         0.0f, -0.5f, 0.0f, // bot
     };
 
     float rainbow[] = {
