@@ -170,16 +170,6 @@ int main()
          0.0f,  0.5f, 0.0f  // top   
     };
 
-    float tri2[] = {
-        -0.5f, 0.0f, 0.0f,  // left  
-         0.5f, 0.0f, 0.0f,  // right 
-         0.0f, 0.5f, 0.0f,  // top
-
-         0.5f, 0.0f, 0.0f,  // right 
-         -0.5f, 0.0f, 0.0f, // left  
-         0.0f, -0.5f, 0.0f, // bot
-    };
-
     float rainbow[] = {
         1.0f, 0.0f, 0.0f,   // red
         0.0f, 1.0f, 0.0f,   // green
@@ -189,36 +179,22 @@ int main()
     float white[] = {
         1.0f, 1.0f, 1.0f,   // white
         1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f,   // white
-
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f,   // white
         1.0f, 1.0f, 1.0f    // white
-    };
-
-    float red[] = {
-        1.0f, 0.0f, 0.0f,   // red
-        1.0f, 0.0f, 0.0f,   // red
-        1.0f, 0.0f, 0.0f    // red
     };
 
     // Generate vertex buffers (data)
     // Generate vertex arrays (collections + descriptions of vertex buffers)
     GLuint vaoRainbow, vaoWhite;
-    GLuint vboPos, vboPos2, vboRainbow, vboWhite;
+    GLuint vboPos, vboRainbow, vboWhite;
     glGenVertexArrays(1, &vaoRainbow);
     glGenVertexArrays(1, &vaoWhite);
     glGenBuffers(1, &vboPos);
-    glGenBuffers(1, &vboPos2);
     glGenBuffers(1, &vboRainbow);
     glGenBuffers(1, &vboWhite);
 
     // Upload position
     glBindBuffer(GL_ARRAY_BUFFER, vboPos);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tri2), tri2, GL_STATIC_DRAW);
 
     // Upload white
     glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
@@ -244,7 +220,7 @@ int main()
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
@@ -268,46 +244,10 @@ int main()
         OnInput(window);
 
         // Declair common render attribute beforehand, then assign based on object!
-        GLuint shader = shaderDefault;
-        GLuint vertexData = vaoWhite;
+        GLuint shader = shaderTransform;
+        GLuint vertexData = vaoRainbow;
         Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
         Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-        switch (state)
-        {
-        case OBJ_1:
-            shader = shaderDefault;
-            vertexData = vaoWhite;
-
-            // glVertexAttribPointer makes the association between the bound vbo and bound vao.
-            // Once the association has been made, vbos can be modified independent of vaos.
-            glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(red), red);
-            break;
-
-        case OBJ_2:
-            shader = shaderDefault;
-            vertexData = vaoRainbow;
-            break;
-
-        case OBJ_3:
-            shader = shaderDefaultFade;
-            vertexData = vaoRainbow;
-            break;
-
-        case OBJ_4:
-            shader = shaderAnimate;
-            vertexData = vaoRainbow;
-            tint.r = cosf(tt * 2.0f * PI) * 0.5f + 0.5f;
-            tint.g = cosf(tt * 2.0f * PI * 0.333f) * 0.5f + 0.5f;
-            tint.b = cosf(tt * 2.0f * PI * 0.666f) * 0.5f + 0.5f;
-            break;
-
-        case OBJ_5:
-            shader = shaderTransform;
-            vertexData = vaoRainbow;
-            break;
-        }
 
         GLint uColor = glGetUniformLocation(shader, "u_color");
         GLint uTime = glGetUniformLocation(shader, "u_time");
@@ -316,12 +256,14 @@ int main()
         glUniform3f(uColor, tint.r, tint.g, tint.b);
 
         float ncos = cosf(tt) * 0.5f + 0.5f;
-        float nsin = sinf(tt) * 0.5f + 0.5f;
         Matrix scale = Scale(ncos, ncos, 0.0f);
         Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f);
         Matrix translation = Translate(cosf(tt), 0.0f, 0.0f);
-        Matrix transform = scale * rotation * translation;
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &transform.m0);
+        Matrix model = scale * rotation * translation;
+        Matrix view = LookAt({ 0.0f, 0.0f, 5.0f }, {}, { 0.0f, 1.0f, 0.0f });
+        Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
+        Matrix mvp = model * view * proj;
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
 
         // render
         // ------
@@ -331,7 +273,7 @@ int main()
         // draw our first triangle
         glUseProgram(shader);
         glBindVertexArray(vertexData);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
