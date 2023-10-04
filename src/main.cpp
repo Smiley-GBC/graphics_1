@@ -109,6 +109,17 @@ enum State
     OBJ_5,
 } state;
 
+struct Vertex
+{
+    Vector3 position;
+    Vector3 color;
+};
+
+struct Square
+{
+    Vertex vertices[4];
+};
+
 int main()
 {
     // glfw: initialize and configure
@@ -155,38 +166,32 @@ int main()
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
     glUseProgram(shaderDefault);
 
-    float positions[] = {
-        0.0f, 0.5f, 0.0f,   // top
-        0.0f, -0.5f, 0.0f   // bot
-    };
-
-    float colors[] = {
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f    // white
-    };
+    Square square;
+    square.vertices[0].position = { -1.0f, 1.0f, 0.0f };
+    square.vertices[1].position = {  1.0f, 1.0f, 0.0f };
+    square.vertices[2].position = {  1.0f, -1.0f, 0.0f };
+    square.vertices[3].position = { -1.0f, -1.0f, 0.0f };
+    square.vertices[0].color = { 1.0f, 1.0f, 1.0f };
+    square.vertices[1].color = { 1.0f, 0.0f, 0.0f };
+    square.vertices[2].color = { 0.0f, 1.0f, 0.0f };
+    square.vertices[3].color = { 0.0f, 0.0f, 1.0f };
+    //for (int i = 0; i < 4; i++)
+    //    square.vertices[i].color = { 1.0f, 1.0f, 1.0f };
 
     GLuint vaoLines;
-    GLuint vboLinePositions, vboLineColors;
+    GLuint vboLines;
     glGenVertexArrays(1, &vaoLines);
-    glGenBuffers(1, &vboLinePositions);
-    glGenBuffers(1, &vboLineColors);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
-    glBufferData(GL_ARRAY_BUFFER, sizeof positions, positions, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
-    glBufferData(GL_ARRAY_BUFFER, sizeof colors, colors, GL_STATIC_DRAW);
-
+    glGenBuffers(1, &vboLines);
+    
     glBindVertexArray(vaoLines);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
+    glBindBuffer(GL_ARRAY_BUFFER, vboLines);
+    glBufferData(GL_ARRAY_BUFFER, sizeof Square, &square, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
+    glLineWidth(25.0f);
     float prev = glfwGetTime();
     float curr = prev;
 
@@ -206,7 +211,7 @@ int main()
         // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);        
-        glDrawArrays(GL_LINES, 0, 2);
+        glDrawArrays(GL_LINES, 0, 4);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
