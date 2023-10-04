@@ -154,10 +154,6 @@ int main()
     GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
-
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
