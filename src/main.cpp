@@ -153,101 +153,40 @@ int main()
 
     GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
+    glUseProgram(shaderDefault);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
+    float positions[] = {
+        0.0f, 0.5f, 0.0f,   // top
+        0.0f, -0.5f, 0.0f   // bot
     };
 
-    float tri2[] = {
-        -0.5f, 0.0f, 0.0f,  // left  
-         0.5f, 0.0f, 0.0f,  // right 
-         0.0f, 0.5f, 0.0f,  // top
-
-         0.5f, 0.0f, 0.0f,  // right 
-         -0.5f, 0.0f, 0.0f, // left  
-         0.0f, -0.5f, 0.0f, // bot
-    };
-
-    float rainbow[] = {
-        1.0f, 0.0f, 0.0f,   // red
-        0.0f, 1.0f, 0.0f,   // green
-        0.0f, 0.0f, 1.0f    // blue
-    };
-
-    float white[] = {
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f,   // white
-
-        1.0f, 1.0f, 1.0f,   // white
+    float colors[] = {
         1.0f, 1.0f, 1.0f,   // white
         1.0f, 1.0f, 1.0f    // white
     };
 
-    float red[] = {
-        1.0f, 0.0f, 0.0f,   // red
-        1.0f, 0.0f, 0.0f,   // red
-        1.0f, 0.0f, 0.0f    // red
-    };
+    GLuint vaoLines;
+    GLuint vboLinePositions, vboLineColors;
+    glGenVertexArrays(1, &vaoLines);
+    glGenBuffers(1, &vboLinePositions);
+    glGenBuffers(1, &vboLineColors);
 
-    // Generate vertex buffers (data)
-    // Generate vertex arrays (collections + descriptions of vertex buffers)
-    GLuint vaoRainbow, vaoWhite;
-    GLuint vboPos, vboPos2, vboRainbow, vboWhite;
-    glGenVertexArrays(1, &vaoRainbow);
-    glGenVertexArrays(1, &vaoWhite);
-    glGenBuffers(1, &vboPos);
-    glGenBuffers(1, &vboPos2);
-    glGenBuffers(1, &vboRainbow);
-    glGenBuffers(1, &vboWhite);
+    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
+    glBufferData(GL_ARRAY_BUFFER, sizeof positions, positions, GL_STATIC_DRAW);
 
-    // Upload position
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
+    glBufferData(GL_ARRAY_BUFFER, sizeof colors, colors, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tri2), tri2, GL_STATIC_DRAW);
+    glBindVertexArray(vaoLines);
 
-    // Upload white
-    glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(white), white, GL_STATIC_DRAW);
-
-    // Upload rainbow
-    glBindBuffer(GL_ARRAY_BUFFER, vboRainbow);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(rainbow), rainbow, GL_STATIC_DRAW);
-
-    // Describe rainbow triangle:
-    glBindVertexArray(vaoRainbow);
+    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
     glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboRainbow);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    // Describe white triangle:
-    glBindVertexArray(vaoWhite);
-    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
     glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos2);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    // Unbind the vao to ensure no accidental associations are made
-    glBindVertexArray(GL_NONE);
     float prev = glfwGetTime();
     float curr = prev;
 
@@ -263,87 +202,17 @@ int main()
         // -----
         OnInput(window);
 
-        // Declair common render attribute beforehand, then assign based on object!
-        GLuint shader = shaderDefault;
-        GLuint vertexData = vaoWhite;
-        Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
-        Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-        switch (state)
-        {
-        case OBJ_1:
-            shader = shaderDefault;
-            vertexData = vaoWhite;
-
-            // glVertexAttribPointer makes the association between the bound vbo and bound vao.
-            // Once the association has been made, vbos can be modified independent of vaos.
-            glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(red), red);
-            break;
-
-        case OBJ_2:
-            shader = shaderDefault;
-            vertexData = vaoRainbow;
-            break;
-
-        case OBJ_3:
-            shader = shaderDefaultFade;
-            vertexData = vaoRainbow;
-            break;
-
-        case OBJ_4:
-            shader = shaderAnimate;
-            vertexData = vaoRainbow;
-            tint.r = cosf(tt * 2.0f * PI) * 0.5f + 0.5f;
-            tint.g = cosf(tt * 2.0f * PI * 0.333f) * 0.5f + 0.5f;
-            tint.b = cosf(tt * 2.0f * PI * 0.666f) * 0.5f + 0.5f;
-            break;
-
-        case OBJ_5:
-            shader = shaderTransform;
-            vertexData = vaoRainbow;
-            break;
-        }
-
-        GLint uColor = glGetUniformLocation(shader, "u_color");
-        GLint uTime = glGetUniformLocation(shader, "u_time");
-        GLint uTransform = glGetUniformLocation(shader, "u_transform");
-        glUniform1f(uTime, tt);
-        glUniform3f(uColor, tint.r, tint.g, tint.b);
-
-        float ncos = cosf(tt) * 0.5f + 0.5f;
-        float nsin = sinf(tt) * 0.5f + 0.5f;
-        Matrix scale = Scale(ncos, ncos, 0.0f);
-        Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f);
-        Matrix translation = Translate(cosf(tt), 0.0f, 0.0f);
-        Matrix transform = scale * rotation * translation;
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &transform.m0);
-
         // render
         // ------
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw our first triangle
-        glUseProgram(shader);
-        glBindVertexArray(vertexData);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);        
+        glDrawArrays(GL_LINES, 0, 2);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &vaoRainbow);
-    glDeleteVertexArrays(1, &vaoWhite);
-    glDeleteBuffers(1, &vboPos);
-    glDeleteBuffers(1, &vboRainbow);
-    glDeleteBuffers(1, &vboWhite);
-    glDeleteProgram(shaderDefault);
-    // Too many shaders to delete. No longer keeping track xD
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
