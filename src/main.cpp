@@ -211,7 +211,7 @@ int main()
         // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);        
-        glDrawArrays(GL_LINES, 0, 4);
+        glDrawArrays(GL_LINE_LOOP, 0, 4);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
