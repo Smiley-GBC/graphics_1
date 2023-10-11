@@ -1,3 +1,4 @@
+//#define _CRT_SECURE_NO_WARNINGS
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <Math.h>
@@ -5,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "Mesh.h"
 
 #include <iostream>
 #include <fstream>
@@ -115,6 +118,9 @@ enum State
 
 int main()
 {
+    //Mesh mesh;
+    //CreateMesh(mesh, "assets/meshes/cube.obj");
+
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -228,6 +234,10 @@ int main()
 
     // Unbind the vao to ensure no accidental associations are made
     glBindVertexArray(GL_NONE);
+
+    Mesh mesh;
+    CreateMesh(mesh, "assets/meshes/cube.obj");
+
     float prev = glfwGetTime();
     float curr = prev;
 
@@ -256,8 +266,8 @@ int main()
         glUniform3f(uColor, tint.r, tint.g, tint.b);
 
         float ncos = cosf(tt) * 0.5f + 0.5f;
-        Matrix scale = Scale(ncos, ncos, 0.0f);
-        Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f);
+        Matrix scale = MatrixIdentity();//Scale(ncos, ncos, 0.0f);
+        Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f) * RotateY(tt * DEG2RAD * 100.0f);
         Matrix translation = Translate(cosf(tt), 0.0f, 0.0f);
         Matrix model = scale * rotation * translation;
         Matrix view = LookAt({ 0.0f, 0.0f, 5.0f }, {}, { 0.0f, 1.0f, 0.0f });
@@ -272,8 +282,11 @@ int main()
 
         // draw our first triangle
         glUseProgram(shader);
-        glBindVertexArray(vertexData);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glBindVertexArray(vertexData);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(mesh.vao);
+        glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
+
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

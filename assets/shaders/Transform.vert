@@ -7,6 +7,8 @@ out vec3 color;
 
 void main()
 {
-   color = aCol;
+   // Convert our normals from [-1, 1] to [0, 1]
+   color = aCol * 0.5 + 0.5;
+   //color = aCol;
    gl_Position = u_transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }
