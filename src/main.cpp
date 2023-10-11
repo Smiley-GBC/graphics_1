@@ -1,11 +1,11 @@
-//#define _CRT_SECURE_NO_WARNINGS
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <Math.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+// Begone, foul fiend!
+//#include <glm/glm.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+//#include <glm/gtc/type_ptr.hpp>
 
 #include "Mesh.h"
 
@@ -18,7 +18,6 @@
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
-// settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
@@ -81,8 +80,6 @@ GLuint CreateShader(GLint type, const char* path)
     catch (std::ifstream::failure& e)
     {
         std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
-        // Alternatively, you can replace the above line with "throw;" to crash your program if a shader fails to load
-        //throw;
     }
     return shader;
 }
@@ -107,29 +104,13 @@ GLuint CreateProgram(GLuint vs, GLuint fs)
     return shaderProgram;
 }
 
-enum State
-{
-    OBJ_1,
-    OBJ_2,
-    OBJ_3,
-    OBJ_4,
-    OBJ_5,
-} state;
-
 int main()
 {
-    //Mesh mesh;
-    //CreateMesh(mesh, "assets/meshes/cube.obj");
-
-    // glfw: initialize and configure
-    // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // glfw window creation
-    // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
@@ -140,205 +121,111 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, OnResize);
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-
-    GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Default.vert");
-    GLuint fsDefault = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Default.frag");
-
-    GLuint vsAnimate = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Animate.vert");
+    
+    // Only loading relevant shaders
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
-
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
-    GLuint fsColorFade = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/ColorFaded.frag");
-
-    GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
-    GLuint shaderDefaultColor = CreateProgram(vsDefault, fsColor);
-    GLuint shaderDefaultFade = CreateProgram(vsDefault, fsColorFade);
-
-    GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
+    Mesh cube, monkey;
+    CreateMesh(cube, "assets/meshes/cube.obj");
+    CreateMesh(monkey, "assets/meshes/monkey.obj");
+
+    // Only one shader so we don't need to bind it for every object, or even every frame
+    GLuint shader = shaderTransform;
+    glUseProgram(shader);
+
+    // Setup OpenGL state
+    glEnable(GL_DEPTH_TEST);// Disabled by default
     glEnable(GL_CULL_FACE); // Disabled by default
     glCullFace(GL_BACK);    // GL_BACK by default
     glFrontFace(GL_CCW);    // GL_CCW by default
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
-    };
-
-    float rainbow[] = {
-        1.0f, 0.0f, 0.0f,   // red
-        0.0f, 1.0f, 0.0f,   // green
-        0.0f, 0.0f, 1.0f    // blue
-    };
-
-    float white[] = {
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f    // white
-    };
-
-    // Generate vertex buffers (data)
-    // Generate vertex arrays (collections + descriptions of vertex buffers)
-    GLuint vaoRainbow, vaoWhite;
-    GLuint vboPos, vboRainbow, vboWhite;
-    glGenVertexArrays(1, &vaoRainbow);
-    glGenVertexArrays(1, &vaoWhite);
-    glGenBuffers(1, &vboPos);
-    glGenBuffers(1, &vboRainbow);
-    glGenBuffers(1, &vboWhite);
-
-    // Upload position
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Upload white
-    glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(white), white, GL_STATIC_DRAW);
-
-    // Upload rainbow
-    glBindBuffer(GL_ARRAY_BUFFER, vboRainbow);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(rainbow), rainbow, GL_STATIC_DRAW);
-
-    // Describe rainbow triangle:
-    glBindVertexArray(vaoRainbow);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboRainbow);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    // Describe white triangle:
-    glBindVertexArray(vaoWhite);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboPos);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboWhite);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    // Unbind the vao to ensure no accidental associations are made
-    glBindVertexArray(GL_NONE);
-
-    Mesh mesh;
-    CreateMesh(mesh, "assets/meshes/monkey.obj");
-
     float prev = glfwGetTime();
     float curr = prev;
 
-    // render loop
-    // -----------
     while (!glfwWindowShouldClose(window))
     {
         float dt = curr - prev, tt = glfwGetTime();
         prev = curr;
         curr = tt;
 
-        // input
-        // -----
         OnInput(window);
 
-        // Declair common render attribute beforehand, then assign based on object!
-        GLuint shader = shaderTransform;
-        GLuint vertexData = vaoRainbow;
         Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
         Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
 
-        GLint uColor = glGetUniformLocation(shader, "u_color");
-        GLint uTime = glGetUniformLocation(shader, "u_time");
-        GLint uTransform = glGetUniformLocation(shader, "u_transform");
-        glUniform1f(uTime, tt);
-        glUniform3f(uColor, tint.r, tint.g, tint.b);
-
-        float ncos = cosf(tt) * 0.5f + 0.5f;
-        Matrix scale = MatrixIdentity();//Scale(ncos, ncos, 0.0f);
-        //Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f) * RotateY(tt * DEG2RAD * 100.0f);
-        Matrix rotation = MatrixIdentity();//RotateZ(DEG2RAD * 45.0f) * RotateY(DEG2RAD * 45.0f);
-        Matrix translation = MatrixIdentity();//Translate(0.0f, 0.0f, 0.0f);
-        Matrix model = scale * rotation * translation;
-        Matrix view = LookAt({ 0.0f, 0.0f, 5.0f }, {}, { 0.0f, 1.0f, 0.0f });
-        Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
-        Matrix mvp = model * view * proj;
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-
-        // render
-        // ------
         glClearColor(bg.r, bg.g, bg.b, bg.a);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // draw our first triangle
-        glUseProgram(shader);
-        //glBindVertexArray(vertexData);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        glBindVertexArray(mesh.vao);
-        glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
+        GLint uColor = glGetUniformLocation(shader, "u_color");
+        GLint uTransform = glGetUniformLocation(shader, "u_transform");
+        
+        Matrix scale = MatrixIdentity();
+        Matrix rotation = MatrixIdentity();
+        Matrix translation = MatrixIdentity();
+        Matrix model = MatrixIdentity();//scale * rotation * translation;
+        const Matrix view = LookAt({ 0.0f, 0.0f, 15.0f }, {}, { 0.0f, 1.0f, 0.0f });
+        const Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
+        Matrix mvp = MatrixIdentity();//model * view * proj;
 
+        // Cube 1:
+        //model = Translate(-1.0f, 0.0, 1.0f);
+        //mvp = model * view * proj;
+        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        //glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+        //glBindVertexArray(cube.vao);
+        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
+        //
+        //// Cube 2:
+        //model = Translate(0.0f, 0.0f, 0.0f);
+        //mvp = model * view * proj;
+        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        //glUniform3f(uColor, 0.0f, 1.0f, 0.0f);
+        //glBindVertexArray(cube.vao);
+        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
+        //
+        //// Cube 3:
+        //model  = Translate(1.0f, 0.0f, -1.0f);
+        //mvp = model * view * proj;
+        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        //glUniform3f(uColor, 0.0f, 0.0f, 1.0f);
+        //glBindVertexArray(cube.vao);
+        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
+        // Suzane (monkey)
+        model = Scale(5.0f, 5.0f, 5.0f);
+        mvp = model * view * proj;
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        glBindVertexArray(monkey.vao);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glDrawArrays(GL_TRIANGLES, 0, monkey.vertexCount);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &vaoRainbow);
-    glDeleteVertexArrays(1, &vaoWhite);
-    glDeleteBuffers(1, &vboPos);
-    glDeleteBuffers(1, &vboRainbow);
-    glDeleteBuffers(1, &vboWhite);
-    glDeleteProgram(shaderDefault);
-    // Too many shaders to delete. No longer keeping track xD
+    DestroyMesh(monkey);
+    DestroyMesh(cube);
+    glDeleteProgram(shaderTransform);
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void OnInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-        state = OBJ_1;
-
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-        state = OBJ_2;
-
-    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-        state = OBJ_3;
-
-    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-        state = OBJ_4;
-
-    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
-        state = OBJ_5;
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void OnResize(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }

@@ -108,3 +108,13 @@ void CreateMesh(Mesh& mesh, const char* path)
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.uvs);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vector2), (void*)(0));
 }
+
+void DestroyMesh(Mesh& mesh)
+{
+	glDeleteBuffers(1, &mesh.positions);
+	glDeleteBuffers(1, &mesh.normals);
+	glDeleteBuffers(1, &mesh.uvs);
+	glDeleteVertexArrays(1, &mesh.vao);
+	mesh.vao = mesh.positions = mesh.normals = mesh.uvs = GL_NONE;
+	// Reset handles to 0 signifying they're invalid.
+}

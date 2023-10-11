@@ -13,3 +13,4 @@ struct Mesh
 };
 
 void CreateMesh(Mesh& mesh, const char* path);
+void DestroyMesh(Mesh& mesh);
