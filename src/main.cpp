@@ -236,7 +236,7 @@ int main()
     glBindVertexArray(GL_NONE);
 
     Mesh mesh;
-    CreateMesh(mesh, "assets/meshes/cube.obj");
+    CreateMesh(mesh, "assets/meshes/monkey.obj");
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -267,8 +267,9 @@ int main()
 
         float ncos = cosf(tt) * 0.5f + 0.5f;
         Matrix scale = MatrixIdentity();//Scale(ncos, ncos, 0.0f);
-        Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f) * RotateY(tt * DEG2RAD * 100.0f);
-        Matrix translation = Translate(cosf(tt), 0.0f, 0.0f);
+        //Matrix rotation = RotateZ(tt * DEG2RAD * 100.0f) * RotateY(tt * DEG2RAD * 100.0f);
+        Matrix rotation = MatrixIdentity();//RotateZ(DEG2RAD * 45.0f) * RotateY(DEG2RAD * 45.0f);
+        Matrix translation = MatrixIdentity();//Translate(0.0f, 0.0f, 0.0f);
         Matrix model = scale * rotation * translation;
         Matrix view = LookAt({ 0.0f, 0.0f, 5.0f }, {}, { 0.0f, 1.0f, 0.0f });
         Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
