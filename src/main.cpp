@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <cassert>
 
 void OnResize(GLFWwindow* window, int width, int height);
@@ -140,30 +141,27 @@ int main()
 
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Default.vert");
     GLuint fsDefault = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Default.frag");
-
-    GLuint vsAnimate = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Animate.vert");
-    GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
-
-    GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
-    GLuint fsColorFade = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/ColorFaded.frag");
-
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
-    GLuint shaderDefaultColor = CreateProgram(vsDefault, fsColor);
-    GLuint shaderDefaultFade = CreateProgram(vsDefault, fsColorFade);
-
-    GLuint shaderAnimate = CreateProgram(vsAnimate, fsColor);
-    GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
     glUseProgram(shaderDefault);
 
-    float positions[] = {
-        0.0f, 0.5f, 0.0f,   // top
-        0.0f, -0.5f, 0.0f   // bot
-    };
+    std::vector<Vector3> vertices(6);
+    vertices[0] = vertices[2] = vertices[4] = {};
+    vertices[1] = { 1.0f, 0.0f, 0.0f };
+    vertices[3] = { -1.0f, 0.0f, 0.0f };
+    vertices[5] = { 1.0f, 1.0f, 0.0f };
 
-    float colors[] = {
-        1.0f, 1.0f, 1.0f,   // white
-        1.0f, 1.0f, 1.0f    // white
-    };
+    Vector4 a{ 0.0f, 1.0f, 0.0f, 1.0f };
+    Vector4 b = Multiply(a, RotateZ(2.0f * PI * 0.33333f));
+    Vector4 c = Multiply(a, RotateZ(2.0f * PI * 0.66666f));
+
+    vertices[1] = { a.x, a.y, a.z };
+    vertices[3] = { b.x, b.y, b.z };
+    vertices[5] = { c.x, c.y, c.z };
+
+    //float colors[] = {
+    //    1.0f, 1.0f, 1.0f,   // white
+    //    1.0f, 1.0f, 1.0f    // white
+    //};
 
     GLuint vaoLines;
     GLuint vboLinePositions, vboLineColors;
@@ -172,10 +170,10 @@ int main()
     glGenBuffers(1, &vboLineColors);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
-    glBufferData(GL_ARRAY_BUFFER, sizeof positions, positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof Vector3, vertices.data(), GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
-    glBufferData(GL_ARRAY_BUFFER, sizeof colors, colors, GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof colors, colors, GL_STATIC_DRAW);
 
     glBindVertexArray(vaoLines);
 
@@ -183,9 +181,9 @@ int main()
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    //glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
+    //glEnableVertexAttribArray(1);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -206,7 +204,7 @@ int main()
         // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);        
-        glDrawArrays(GL_LINES, 0, 2);
+        glDrawArrays(GL_LINES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
