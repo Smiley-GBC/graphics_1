@@ -132,11 +132,18 @@ int main()
         { 0.0f, 1.0f, 0.0f }
     };
 
+    Vector3 colors[] = {
+        { 1.0f, 0.0f, 0.0f },
+        { 0.0f, 1.0f, 0.0f },
+        { 0.0f, 0.0f, 1.0f }
+    };
+
     Vertices vertices(30000);
     for (size_t i = 1; i < vertices.size(); i++)
     {
-        vertices[i].position = (vertices[i - 1].position + triangle[rand() % 3]) * 0.5f;
-        vertices[i].color = Vector3{ Random(0.0f, 1.0f), Random(0.0f, 1.0f), Random(0.0f, 1.0f) };
+        size_t n = rand() % 3;
+        vertices[i].position = (vertices[i - 1].position + triangle[n]) * 0.5f;
+        vertices[i].color = colors[n];
     }
 
     GLuint vaoPoints;
