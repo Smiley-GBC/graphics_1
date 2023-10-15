@@ -13,8 +13,8 @@ void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 struct Color
 {
@@ -75,8 +75,6 @@ GLuint CreateShader(GLint type, const char* path)
     catch (std::ifstream::failure& e)
     {
         std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
-        // Alternatively, you can replace the above line with "throw;" to crash your program if a shader fails to load
-        //throw;
     }
     return shader;
 }
@@ -101,63 +99,13 @@ GLuint CreateProgram(GLuint vs, GLuint fs)
     return shaderProgram;
 }
 
-enum State
+struct Vertex
 {
-    OBJ_1,
-    OBJ_2,
-    OBJ_3,
-    OBJ_4,
-    OBJ_5,
-} state;
-
-using Vertices = std::vector<Vector3>;
-
-struct TernaryTree
-{
-
+    Vector3 position;
+    Vector3 color;
 };
 
-Vertices Aids(Vector3 origin, float length)
-{
-    Vertices vertices(3);
-
-    Vector3 up = Normalize(Vector3{ 0.0f, 1.0f, 0.0f });
-    Vector3 left = Normalize(Vector3{ -0.866035879f, -0.5f, 0.0f });
-    Vector3 right = Normalize(Vector3{ 0.866035879f, -0.5f, 0.0f });
-
-    vertices[0] = origin + up * length;
-    vertices[1] = origin + left * length;
-    vertices[2] = origin + right * length;
-
-    return vertices;
-}
-
-void Aids3(Vector3 origin, Vertices& vertices, float length, size_t iterations)
-{
-    if (iterations > 0)
-    {
-        for (size_t i = 0; i < vertices.size(); i++)
-        {
-            // Something like this, but with the correct offset into vertices
-            Aids3(vertices[i], vertices, length * 0.5f, iterations - 1);
-        }
-    }
-}
-
-//Vertices Create(Vector3 origin, Vector3 up, Vector3 left, Vector3 right, float length)
-//{
-//    Vertices vertices(6);
-//    vertices[0] = vertices[2] = vertices[4] = origin;
-//    vertices[1] = origin + up * length;
-//    vertices[3] = origin + left * length;
-//    vertices[5] = origin + right * length;
-//    return vertices;
-//}
-//
-//std::vector<Vertices> Create3(const Vertices& positions, const Vertices& directions, float length)
-//{
-//    for ()
-//}
+using Vertices = std::vector<Vertex>;
 
 int main()
 {
@@ -193,117 +141,60 @@ int main()
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
     glUseProgram(shaderDefault);
 
-    float length = 1.0f;
-    Vector3 up = Normalize(Vector3{ 0.0f, 1.0f, 0.0f });
-    Vector3 left = Normalize(Vector3{ -0.866035879f, -0.5f, 0.0f });
-    Vector3 right = Normalize(Vector3{ 0.866035879f, -0.5f, 0.0f });
-    Vertices vertices = Create({}, up, left, right, 1.0f);
+    Vector3 triangle[] = {
+        {-1.0f, -1.0f, 0.0f},
+        {1.0f, -1.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f}
+    };
 
-    const size_t iterations = 5;
-    std::vector<Vertices> collection(8);
-    collection[0] = vertices;
-    size_t vertexCount = 3;
-    for (size_t i = 1; i < iterations; i++)
+    Vertices vertices(30000);
+    for (size_t i = 1; i < vertices.size(); i++)
     {
-        for (size_t j = 0; j < collection[i - 1].size(); j++)
-        {
-            // this is hurting my brain. The proper way to do this 
-        }
-        //for (size_t j = 0; j < 6; j+= 2)
-        //{
-        //    collection[i] = Create(collection[i - 1][j], up, left, right, length);
-        //    vertexCount += 6;
-        //}
+        vertices[i].position = (vertices[i - 1].position + triangle[rand() % 3]) * 0.5f;
+        vertices[i].color = Vector3{ Random(0.0f, 1.0f), Random(0.0f, 1.0f), Random(0.0f, 1.0f) };
     }
 
-    //float colors[] = {
-    //    1.0f, 1.0f, 1.0f,   // white
-    //    1.0f, 1.0f, 1.0f    // white
-    //};
-
-    GLuint vaoLines;
-    GLuint vboLinePositions, vboLineColors;
-    glGenVertexArrays(1, &vaoLines);
-    glGenBuffers(1, &vboLinePositions);
-    glGenBuffers(1, &vboLineColors);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof Vector3, vertices.data(), GL_STATIC_DRAW);
-
-    //glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
-    //glBufferData(GL_ARRAY_BUFFER, sizeof colors, colors, GL_STATIC_DRAW);
-
-    glBindVertexArray(vaoLines);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboLinePositions);
+    GLuint vaoPoints;
+    GLuint vboPoints;
+    glGenVertexArrays(1, &vaoPoints);
+    glGenBuffers(1, &vboPoints);
+    glBindVertexArray(vaoPoints);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPoints);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof Vertex, vertices.data(), GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    //glBindBuffer(GL_ARRAY_BUFFER, vboLineColors);
-    //glEnableVertexAttribArray(1);
-    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)offsetof(Vertex, color));
 
     float prev = glfwGetTime();
     float curr = prev;
 
-    // render loop
-    // -----------
     while (!glfwWindowShouldClose(window))
     {
         float dt = curr - prev, tt = glfwGetTime();
         prev = curr;
         curr = tt;
-
-        // input
-        // -----
         OnInput(window);
 
-        // render
-        // ------
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);        
-        glDrawArrays(GL_LINES, 0, 6);
+        glDrawArrays(GL_POINTS, 0, vertices.size());
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void OnInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-        state = OBJ_1;
-
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-        state = OBJ_2;
-
-    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-        state = OBJ_3;
-
-    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-        state = OBJ_4;
-
-    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
-        state = OBJ_5;
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void OnResize(GLFWwindow* window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
