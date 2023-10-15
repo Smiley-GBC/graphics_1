@@ -110,6 +110,55 @@ enum State
     OBJ_5,
 } state;
 
+using Vertices = std::vector<Vector3>;
+
+struct TernaryTree
+{
+
+};
+
+Vertices Aids(Vector3 origin, float length)
+{
+    Vertices vertices(3);
+
+    Vector3 up = Normalize(Vector3{ 0.0f, 1.0f, 0.0f });
+    Vector3 left = Normalize(Vector3{ -0.866035879f, -0.5f, 0.0f });
+    Vector3 right = Normalize(Vector3{ 0.866035879f, -0.5f, 0.0f });
+
+    vertices[0] = origin + up * length;
+    vertices[1] = origin + left * length;
+    vertices[2] = origin + right * length;
+
+    return vertices;
+}
+
+void Aids3(Vector3 origin, Vertices& vertices, float length, size_t iterations)
+{
+    if (iterations > 0)
+    {
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            // Something like this, but with the correct offset into vertices
+            Aids3(vertices[i], vertices, length * 0.5f, iterations - 1);
+        }
+    }
+}
+
+//Vertices Create(Vector3 origin, Vector3 up, Vector3 left, Vector3 right, float length)
+//{
+//    Vertices vertices(6);
+//    vertices[0] = vertices[2] = vertices[4] = origin;
+//    vertices[1] = origin + up * length;
+//    vertices[3] = origin + left * length;
+//    vertices[5] = origin + right * length;
+//    return vertices;
+//}
+//
+//std::vector<Vertices> Create3(const Vertices& positions, const Vertices& directions, float length)
+//{
+//    for ()
+//}
+
 int main()
 {
     // glfw: initialize and configure
@@ -144,19 +193,28 @@ int main()
     GLuint shaderDefault = CreateProgram(vsDefault, fsDefault);
     glUseProgram(shaderDefault);
 
-    std::vector<Vector3> vertices(6);
-    vertices[0] = vertices[2] = vertices[4] = {};
-    vertices[1] = { 1.0f, 0.0f, 0.0f };
-    vertices[3] = { -1.0f, 0.0f, 0.0f };
-    vertices[5] = { 1.0f, 1.0f, 0.0f };
+    float length = 1.0f;
+    Vector3 up = Normalize(Vector3{ 0.0f, 1.0f, 0.0f });
+    Vector3 left = Normalize(Vector3{ -0.866035879f, -0.5f, 0.0f });
+    Vector3 right = Normalize(Vector3{ 0.866035879f, -0.5f, 0.0f });
+    Vertices vertices = Create({}, up, left, right, 1.0f);
 
-    Vector4 a{ 0.0f, 1.0f, 0.0f, 1.0f };
-    Vector4 b = Multiply(a, RotateZ(2.0f * PI * 0.33333f));
-    Vector4 c = Multiply(a, RotateZ(2.0f * PI * 0.66666f));
-
-    vertices[1] = { a.x, a.y, a.z };
-    vertices[3] = { b.x, b.y, b.z };
-    vertices[5] = { c.x, c.y, c.z };
+    const size_t iterations = 5;
+    std::vector<Vertices> collection(8);
+    collection[0] = vertices;
+    size_t vertexCount = 3;
+    for (size_t i = 1; i < iterations; i++)
+    {
+        for (size_t j = 0; j < collection[i - 1].size(); j++)
+        {
+            // this is hurting my brain. The proper way to do this 
+        }
+        //for (size_t j = 0; j < 6; j+= 2)
+        //{
+        //    collection[i] = Create(collection[i - 1][j], up, left, right, length);
+        //    vertexCount += 6;
+        //}
+    }
 
     //float colors[] = {
     //    1.0f, 1.0f, 1.0f,   // white
