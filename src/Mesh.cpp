@@ -17,7 +17,6 @@ void CreateMesh(Mesh& mesh, const char* path)
 	std::vector<Vector3> temp_normals;
 
 	FILE* file = fopen(path, "r");
-	//fopen_s(&file, path, "r");
 
 	if (!file)
 	{

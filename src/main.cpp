@@ -4,21 +4,16 @@
 
 #include "Mesh.h"
 #include "Shader.h"
+#include "Physics.h"
 #include <iostream>
+
+#define GRAVITY { 0.0f, -9.8f, 0.0f }
 
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-struct Color
-{
-    float r = 0.0f;
-    float g = 0.0f;
-    float b = 0.0f;
-    float a = 0.0f;
-};
 
 int main()
 {
@@ -45,11 +40,18 @@ int main()
     
     // Only loading relevant shaders
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
+    GLuint fsLighting = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Lighting.frag");
+    GLuint fsDefault = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Default.frag");
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    Mesh cube, monkey;
+    Entity test;
+    test.pos = { 0.0f, 50.0f, 0.0f };
+
+    Mesh cube, sphere, plane, monkey;
     CreateMesh(cube, "assets/meshes/cube.obj");
+    CreateMesh(sphere, "assets/meshes/sphere.obj");
+    CreateMesh(plane, "assets/meshes/plane.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
     // Only one shader so we don't need to bind it for every object, or even every frame
@@ -72,11 +74,9 @@ int main()
         curr = tt;
 
         OnInput(window);
+        Simulate(test, GRAVITY, dt);
 
-        Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
-        Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
+        glClearColor(0.0f, 0.75f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         GLint uColor = glGetUniformLocation(shader, "u_color");
@@ -86,42 +86,23 @@ int main()
         Matrix rotation = MatrixIdentity();
         Matrix translation = MatrixIdentity();
         Matrix model = MatrixIdentity();//scale * rotation * translation;
-        const Matrix view = LookAt({ 0.0f, 0.0f, 15.0f }, {}, { 0.0f, 1.0f, 0.0f });
+        const Matrix view = LookAt({ 50.0f, 50.0f, 50.0f }, {}, { 0.0f, 1.0f, 0.0f });
         const Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
         Matrix mvp = MatrixIdentity();//model * view * proj;
 
-        // Cube 1:
-        //model = Translate(-1.0f, 0.0, 1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 2:
-        //model = Translate(0.0f, 0.0f, 0.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 1.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 3:
-        //model  = Translate(1.0f, 0.0f, -1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 0.0f, 1.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-
-        // Suzane (monkey)
-        model = Scale(5.0f, 5.0f, 5.0f);
+        model = Scale(100.0f, 1.0f, 100.0f);
         mvp = model * view * proj;
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
         glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
-        glBindVertexArray(monkey.vao);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, monkey.vertexCount);
+        glBindVertexArray(plane.vao);
+        glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
+
+        model = Translate(test.pos.x, test.pos.y, test.pos.z); //Scale(5.0f, 5.0f, 5.0f);
+        mvp = model * view * proj;
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        glBindVertexArray(sphere.vao);
+        glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
