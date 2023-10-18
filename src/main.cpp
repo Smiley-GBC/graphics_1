@@ -20,6 +20,12 @@ const unsigned int SCR_HEIGHT = 720;
 
 int main()
 {
+    std::vector<Entity*> entities;
+    for (float i = -15.0f; i < 15.0f; i += 5.0f)
+    {
+        entities.push_back(Add({ i, 50.0f, 0.0f }));
+    }
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -65,9 +71,6 @@ int main()
     CreateMesh(sphere, "assets/meshes/sphere.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
-    Entity test;
-    test.pos = { 0.0f, 50.0f, 0.0f };
-
     // Only one shader so we don't need to bind it for every object, or even every frame
     GLuint shader = shaderColor;
     glUseProgram(shader);
@@ -88,7 +91,7 @@ int main()
         curr = tt;
 
         OnInput(window);
-        Simulate(test, GRAVITY, dt);
+        SimulateAll(GRAVITY, dt);
 
         glClearColor(0.0f, 0.75f, 0.90f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -105,16 +108,19 @@ int main()
         Matrix mvp = MatrixIdentity();//model * view * proj;
 
         // Sphere
-        model = Translate(test.pos.x, test.pos.y, test.pos.z);
-        mvp = model * view * proj;
-        shader = shaderLighting;
-        uColor = glGetUniformLocation(shader, "u_color");
-        uTransform = glGetUniformLocation(shader, "u_transform");
-        glUseProgram(shader);
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
-        glBindVertexArray(sphere.vao);
-        glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
+        for (const Entity* entity : entities)
+        {
+            model = Translate(entity->pos.x, entity->pos.y, entity->pos.z);
+            mvp = model * view * proj;
+            shader = shaderLighting;
+            uColor = glGetUniformLocation(shader, "u_color");
+            uTransform = glGetUniformLocation(shader, "u_transform");
+            glUseProgram(shader);
+            glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+            glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+            glBindVertexArray(sphere.vao);
+            glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
+        }
 
         // Plane
         model = Scale(100.0f, 1.0f, 100.0f);
