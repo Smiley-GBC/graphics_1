@@ -17,6 +17,8 @@ void OnInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 #define GRAVITY {0.0f, -9.8f, 0.0f}
+#define RED {1.0f, 0.0f, 0.0f}
+#define GREEN {0.0f, 1.0f, 0.0f}
 
 int main()
 {
@@ -25,7 +27,6 @@ int main()
     for (float i = -15.0f; i < 15.0f; i += 5.0f)
         entities[counter++] = Add({ i, 50.0f, 0.0f });
 
-    Entities& e = All();
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -93,6 +94,16 @@ int main()
         OnInput(window);
         SimulateAll(GRAVITY, dt);
 
+        for (Entity& entity : All())
+            entity.color = GREEN;
+
+        HitPairs& pairs = Collisions();
+        for (HitPair pair : pairs)
+        {
+            pair.a->color = RED;
+            pair.b->color = RED;
+        }
+
         glClearColor(0.0f, 0.75f, 0.90f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -117,7 +128,7 @@ int main()
             uTransform = glGetUniformLocation(shader, "u_transform");
             glUseProgram(shader);
             glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-            glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
+            glUniform3f(uColor, entity.color.r, entity.color.g, entity.color.b);
             glBindVertexArray(sphere.vao);
             glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
         }
