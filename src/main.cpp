@@ -13,8 +13,8 @@
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 int main()
 {
@@ -52,16 +52,19 @@ int main()
     
     // Only loading relevant shaders
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
+    GLuint fsLighting = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Lighting.frag");
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
-    GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
+    GLuint shaderLighting = CreateProgram(vsTransform, fsLighting);
+    GLuint shaderColor = CreateProgram(vsTransform, fsColor);
 
-    Mesh cube, sphere, monkey;
+    Mesh cube, plane, sphere, monkey;
     CreateMesh(cube, "assets/meshes/cube.obj");
+    CreateMesh(plane, "assets/meshes/plane.obj");
     CreateMesh(sphere, "assets/meshes/sphere.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
     // Only one shader so we don't need to bind it for every object, or even every frame
-    GLuint shader = shaderTransform;
+    GLuint shader = shaderColor;
     glUseProgram(shader);
 
     // Setup OpenGL state
@@ -84,8 +87,8 @@ int main()
         glClearColor(0.0f, 0.75f, 0.90f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        GLint uColor = glGetUniformLocation(shader, "u_color");
-        GLint uTransform = glGetUniformLocation(shader, "u_transform");
+        GLint uColor = GL_NONE;
+        GLint uTransform = GL_NONE;
         
         Matrix scale = MatrixIdentity();
         Matrix rotation = MatrixIdentity();
@@ -95,14 +98,29 @@ int main()
         const Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
         Matrix mvp = MatrixIdentity();//model * view * proj;
 
-        // Suzane (monkey)
+        // Sphere
         model = Scale(5.0f, 5.0f, 5.0f);
         mvp = model * view * proj;
+        shader = shaderLighting;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uTransform = glGetUniformLocation(shader, "u_transform");
+        glUseProgram(shader);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
         glBindVertexArray(sphere.vao);
-        glClear(GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
+
+        // Plane
+        model = Scale(100.0f, 1.0f, 100.0f);
+        mvp = model * view * proj;
+        shader = shaderColor;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uTransform = glGetUniformLocation(shader, "u_transform");
+        glUseProgram(shader);
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniform3f(uColor, 0.375f, 0.375f, 0.375f);
+        glBindVertexArray(plane.vao);
+        glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
 
         ImGui_ImplGlfw_NewFrame();
         ImGui_ImplOpenGL3_NewFrame();
@@ -122,7 +140,7 @@ int main()
 
     DestroyMesh(monkey);
     DestroyMesh(cube);
-    glDeleteProgram(shaderTransform);
+    glDeleteProgram(shaderLighting);
 
     glfwTerminate();
     return 0;
