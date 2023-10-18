@@ -20,12 +20,12 @@ const unsigned int SCR_HEIGHT = 720;
 
 int main()
 {
-    std::vector<Entity*> entities;
+    Ids entities(6);
+    size_t counter = 0;
     for (float i = -15.0f; i < 15.0f; i += 5.0f)
-    {
-        entities.push_back(Add({ i, 50.0f, 0.0f }));
-    }
+        entities[counter++] = Add({ i, 50.0f, 0.0f });
 
+    Entities& e = All();
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -108,9 +108,9 @@ int main()
         Matrix mvp = MatrixIdentity();//model * view * proj;
 
         // Sphere
-        for (const Entity* entity : entities)
+        for (const Entity& entity : All())
         {
-            model = Translate(entity->pos.x, entity->pos.y, entity->pos.z);
+            model = Translate(entity.pos.x, entity.pos.y, entity.pos.z);
             mvp = model * view * proj;
             shader = shaderLighting;
             uColor = glGetUniformLocation(shader, "u_color");
