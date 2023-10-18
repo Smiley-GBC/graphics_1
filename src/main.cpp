@@ -9,12 +9,14 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include <iostream>
+#include "Physics.h"
 
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
+#define GRAVITY {0.0f, -9.8f, 0.0f}
 
 int main()
 {
@@ -63,6 +65,9 @@ int main()
     CreateMesh(sphere, "assets/meshes/sphere.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
+    Entity test;
+    test.pos = { 0.0f, 50.0f, 0.0f };
+
     // Only one shader so we don't need to bind it for every object, or even every frame
     GLuint shader = shaderColor;
     glUseProgram(shader);
@@ -83,6 +88,7 @@ int main()
         curr = tt;
 
         OnInput(window);
+        Simulate(test, GRAVITY, dt);
 
         glClearColor(0.0f, 0.75f, 0.90f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -99,7 +105,7 @@ int main()
         Matrix mvp = MatrixIdentity();//model * view * proj;
 
         // Sphere
-        model = Scale(5.0f, 5.0f, 5.0f);
+        model = Translate(test.pos.x, test.pos.y, test.pos.z);
         mvp = model * view * proj;
         shader = shaderLighting;
         uColor = glGetUniformLocation(shader, "u_color");
