@@ -55,8 +55,9 @@ int main()
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    Mesh cube, monkey;
+    Mesh cube, sphere, monkey;
     CreateMesh(cube, "assets/meshes/cube.obj");
+    CreateMesh(sphere, "assets/meshes/sphere.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
     // Only one shader so we don't need to bind it for every object, or even every frame
@@ -99,9 +100,9 @@ int main()
         mvp = model * view * proj;
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
         glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
-        glBindVertexArray(monkey.vao);
+        glBindVertexArray(sphere.vao);
         glClear(GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, monkey.vertexCount);
+        glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
 
         ImGui_ImplGlfw_NewFrame();
         ImGui_ImplOpenGL3_NewFrame();
