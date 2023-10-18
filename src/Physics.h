@@ -39,6 +39,7 @@ struct Entity
 {
 	size_t id = 0;
 	Vector3 pos;
+	Vector3 dir;
 	Body body;
 	Shape shape;
 	ShapeType shapeType;
@@ -58,7 +59,7 @@ void Simulate(Entity& entity, Vector3 acc, float dt);
 void SimulateAll(Vector3 acc, float dt);
 HitPairs& Collisions();
 
-size_t Add(Vector3 pos = {});
+size_t Add(Shape shape, ShapeType shapeType, Vector3 pos = {}, Vector3 dir = {0.0f, 0.0f, 1.0f});
 void Remove(size_t id);
 Entities& All();
 

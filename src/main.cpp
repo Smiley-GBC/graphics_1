@@ -25,7 +25,11 @@ int main()
     Ids entities(6);
     size_t counter = 0;
     for (float i = -15.0f; i < 15.0f; i += 5.0f)
-        entities[counter++] = Add({ i, 50.0f, 0.0f });
+    {
+        Shape shape;
+        shape.sphere.radius = 2.49f;
+        entities[counter++] = Add(shape, SPHERE, {i, 50.0f, 0.0f });
+    }
 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -121,7 +125,12 @@ int main()
         // Sphere
         for (const Entity& entity : All())
         {
-            model = Translate(entity.pos.x, entity.pos.y, entity.pos.z);
+            if (entity.shapeType == SPHERE)
+            {
+                float r = entity.shape.sphere.radius;
+                scale = Scale(r, r, r);
+            }
+            model = scale * Translate(entity.pos.x, entity.pos.y, entity.pos.z);
             mvp = model * view * proj;
             shader = shaderLighting;
             uColor = glGetUniformLocation(shader, "u_color");

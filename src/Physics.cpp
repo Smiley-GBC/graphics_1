@@ -51,11 +51,14 @@ HitPairs& Collisions()
 	return gPhysics.collisions;
 }
 
-size_t Add(Vector3 pos)
+size_t Add(Shape shape, ShapeType shapeType, Vector3 pos, Vector3 dir)
 {
 	Entity entity;
 	entity.id = ++gPhysics.id;
 	entity.pos = pos;
+	entity.dir = dir;
+	entity.shape = shape;
+	entity.shapeType = shapeType;
 
 	gPhysics.entities.push_back(entity);
 	return gPhysics.entities.back().id;
