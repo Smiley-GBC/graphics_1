@@ -2,107 +2,19 @@
 #include <GLFW/glfw3.h>
 #include <Math.h>
 
-// Begone, foul fiend!
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-//#include <glm/gtc/type_ptr.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 
 #include "Mesh.h"
-
+#include "Shader.h"
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cassert>
 
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
-struct Color
-{
-    float r = 0.0f;
-    float g = 0.0f;
-    float b = 0.0f;
-    float a = 0.0f;
-};
-
-GLuint CreateShader(GLint type, const char* path)
-{
-    GLuint shader = 0;
-    try
-    {
-        // Load text file
-        std::ifstream file;
-        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        file.open(path);
-
-        // Interpret the file as a giant string
-        std::stringstream stream;
-        stream << file.rdbuf();
-        file.close();
-
-        // Verify shader type matches shader file extension
-        const char* ext = strrchr(path, '.');
-        switch (type)
-        {
-        case GL_VERTEX_SHADER:
-            assert(strcmp(ext, ".vert") == 0);
-            break;
-
-        case GL_FRAGMENT_SHADER:
-            assert(strcmp(ext, ".frag") == 0);
-            break;
-        default:
-            assert(false, "Invalid shader type");
-            break;
-        }
-
-        // Compile text as a shader
-        std::string str = stream.str();
-        const char* src = str.c_str();
-        shader = glCreateShader(type);
-        glShaderSource(shader, 1, &src, NULL);
-        glCompileShader(shader);
-
-        // Check for compilation errors
-        GLint success;
-        GLchar infoLog[512];
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(shader, 512, NULL, infoLog);
-            std::cout << "Shader failed to compile: \n" << infoLog << std::endl;
-        }
-    }
-    catch (std::ifstream::failure& e)
-    {
-        std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
-    }
-    return shader;
-}
-
-GLuint CreateProgram(GLuint vs, GLuint fs)
-{
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vs);
-    glAttachShader(shaderProgram, fs);
-    glLinkProgram(shaderProgram);
-
-    // Check for linking errors
-    int success;
-    char infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        shaderProgram = GL_NONE;
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-
-    return shaderProgram;
-}
 
 int main()
 {
@@ -126,6 +38,17 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
     
     // Only loading relevant shaders
     GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
@@ -148,7 +71,7 @@ int main()
 
     float prev = glfwGetTime();
     float curr = prev;
-
+    Vector3 cameraPosition{ 50.0f, 50.0f, 50.0f };
     while (!glfwWindowShouldClose(window))
     {
         float dt = curr - prev, tt = glfwGetTime();
@@ -157,10 +80,7 @@ int main()
 
         OnInput(window);
 
-        Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
-        Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
-
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
+        glClearColor(0.0f, 0.75f, 0.90f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         GLint uColor = glGetUniformLocation(shader, "u_color");
@@ -170,33 +90,9 @@ int main()
         Matrix rotation = MatrixIdentity();
         Matrix translation = MatrixIdentity();
         Matrix model = MatrixIdentity();//scale * rotation * translation;
-        const Matrix view = LookAt({ 0.0f, 0.0f, 15.0f }, {}, { 0.0f, 1.0f, 0.0f });
+        const Matrix view = LookAt(cameraPosition, {}, { 0.0f, 1.0f, 0.0f });
         const Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
         Matrix mvp = MatrixIdentity();//model * view * proj;
-
-        // Cube 1:
-        //model = Translate(-1.0f, 0.0, 1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 2:
-        //model = Translate(0.0f, 0.0f, 0.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 1.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 3:
-        //model  = Translate(1.0f, 0.0f, -1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 0.0f, 1.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
 
         // Suzane (monkey)
         model = Scale(5.0f, 5.0f, 5.0f);
@@ -207,9 +103,21 @@ int main()
         glClear(GL_DEPTH_BUFFER_BIT);
         glDrawArrays(GL_TRIANGLES, 0, monkey.vertexCount);
 
+        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SliderFloat3("Camera Position", &cameraPosition.x, -100.0f, 100.0f);
+        //ImGui::ShowDemoWindow();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    ImGui_ImplGlfw_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext();
 
     DestroyMesh(monkey);
     DestroyMesh(cube);
