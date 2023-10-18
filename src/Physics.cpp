@@ -35,6 +35,16 @@ void SimulateAll(Vector3 acc, float dt)
 				collision = CheckCollisionSpheres(a.pos, a.shape.sphere.radius, b.pos, b.shape.sphere.radius);
 			}
 
+			if (a.shapeType == SPHERE && b.shapeType == PLANE)
+			{
+				collision = CheckCollisionSpherePlane(a.pos, a.shape.sphere.radius, b.pos, b.shape.plane.normal);
+			}
+
+			if (a.shapeType == PLANE && b.shapeType == SPHERE)
+			{
+				collision = CheckCollisionSpherePlane(b.pos, b.shape.sphere.radius, a.pos, a.shape.plane.normal);
+			}
+
 			if (collision)
 			{
 				HitPair pair;
@@ -64,6 +74,15 @@ size_t Add(Shape shape, ShapeType shapeType, Vector3 pos, Vector3 dir)
 	return gPhysics.entities.back().id;
 }
 
+Entity& Get(size_t id)
+{
+	for (Entity& entity : gPhysics.entities)
+	{
+		if (entity.id == id)
+			return entity;
+	}
+}
+
 void Remove(size_t id)
 {
 	for (size_t i = 0; i < gPhysics.entities.size(); i++)
@@ -88,5 +107,6 @@ bool CheckCollisionSpheres(Vector3 pos1, float radius1, Vector3 pos2, float radi
 
 bool CheckCollisionSpherePlane(Vector3 spherePos, float sphereRadius, Vector3 planePos, Vector3 planeNormal)
 {
+	// TODO -- add this for homework ;)
 	return false;
 }

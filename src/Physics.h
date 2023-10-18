@@ -60,6 +60,7 @@ void SimulateAll(Vector3 acc, float dt);
 HitPairs& Collisions();
 
 size_t Add(Shape shape, ShapeType shapeType, Vector3 pos = {}, Vector3 dir = {0.0f, 0.0f, 1.0f});
+Entity& Get(size_t id);
 void Remove(size_t id);
 Entities& All();
 

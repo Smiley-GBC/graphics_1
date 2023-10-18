@@ -28,7 +28,18 @@ int main()
     {
         Shape shape;
         shape.sphere.radius = 2.49f;
-        entities[counter++] = Add(shape, SPHERE, {i, 50.0f, 0.0f });
+        entities[counter++] = Add(shape, SPHERE, {i, 25.0f, 0.0f });
+    }
+
+    for (Entity& entity : All())
+        entity.body.gravityScale = 0.0f;
+    
+    Entity* halfPlane = nullptr;
+    {
+        Shape shape;
+        shape.plane.normal = { 1.0f, 0.0f, 0.0f };
+        halfPlane = &Get(Add(shape, PLANE, { 0.0f, 25.0f, 0.0f }));
+        halfPlane->body.gravityScale = 0.0f;
     }
 
     glfwInit();
@@ -129,18 +140,41 @@ int main()
             {
                 float r = entity.shape.sphere.radius;
                 scale = Scale(r, r, r);
+                translation = Translate(entity.pos.x, entity.pos.y, entity.pos.z);
+
+                model = scale * rotation * translation;
+                mvp = model * view * proj;
+
+                shader = shaderLighting;
+                uColor = glGetUniformLocation(shader, "u_color");
+                uTransform = glGetUniformLocation(shader, "u_transform");
+                glUseProgram(shader);
+                glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+                glUniform3f(uColor, entity.color.r, entity.color.g, entity.color.b);
+
+                glBindVertexArray(sphere.vao);
+                glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
             }
-            model = scale * Translate(entity.pos.x, entity.pos.y, entity.pos.z);
-            mvp = model * view * proj;
-            shader = shaderLighting;
-            uColor = glGetUniformLocation(shader, "u_color");
-            uTransform = glGetUniformLocation(shader, "u_transform");
-            glUseProgram(shader);
-            glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-            glUniform3f(uColor, entity.color.r, entity.color.g, entity.color.b);
-            glBindVertexArray(sphere.vao);
-            glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
         }
+
+        // Half Plane
+        scale = Scale(5.0f, 1.0f, 5.0f);
+        rotation = RotateZ(90.0f * DEG2RAD);
+        translation = Translate(halfPlane->pos.x, halfPlane->pos.y, halfPlane->pos.z);
+        model = scale * rotation * translation;
+        mvp = model * view * proj;
+
+        shader = shaderColor;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uTransform = glGetUniformLocation(shader, "u_transform");
+        glUseProgram(shader);
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniform3f(uColor, 0.375f, 0.375f, 0.375f);
+
+        glBindVertexArray(plane.vao);
+        glDisable(GL_CULL_FACE);
+        glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
+        glEnable(GL_CULL_FACE);
 
         // Plane
         model = Scale(100.0f, 1.0f, 100.0f);
@@ -158,6 +192,7 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui::NewFrame();
         ImGui::SliderFloat3("Camera Position", &cameraPosition.x, -100.0f, 100.0f);
+        ImGui::SliderFloat("Plane Position", &halfPlane->pos.x, -100.0f, 100.0f);
         //ImGui::ShowDemoWindow();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
