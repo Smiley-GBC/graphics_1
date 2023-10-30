@@ -12,6 +12,6 @@ void main()
 {
    // Convert our normals from [-1, 1] to [0, 1]
    normal = aNorm;
-   color = aNorm * 0.5 + 0.5;
+   color = vec3(1.0);//aNorm * 0.5 + 0.5;
    gl_Position = u_transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }
