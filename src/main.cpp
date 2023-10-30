@@ -15,6 +15,11 @@ void OnInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+Vector3 Up(Matrix matrix)
+{
+    return { matrix.m4, matrix.m5, matrix.m6 };
+}
+
 int main()
 {
     glfwInit();
@@ -45,19 +50,34 @@ int main()
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
+    // TODO -- make the Add function better so we can't have any uninitialized memory
     for (float i = -15.0f; i < 15.0f; i += 5.0f)
     {
         Entity entity;
         entity.shapeType = SPHERE;
-        entity.shape.sphere.radius = 2.51f;
-        entity.pos = { i, 50.0f, 0.0f };
+        entity.shape.sphere.radius = 2.49f;
+        entity.pos = { i, 20.0f, 0.0f };
+        entity.body.gravityScale = 0.0f;
         Add(entity);
     }
 
-    Mesh cube, sphere, plane, monkey;
+    float planePitch = 90.0f * DEG2RAD;
+    float planeYaw = 90.0f * DEG2RAD;
+    float rotationSpeed = 100.0f * DEG2RAD;
+    size_t planeHandle = 0;
+    {
+        Entity plane;
+        plane.pos = {};
+        plane.shapeType = PLANE;
+        plane.shape.plane.normal = { 1.0f, 0.0f, 0.0f };
+        plane.body.gravityScale = 0.0f;
+        planeHandle = Add(plane);
+    }
+
+    Mesh cube, sphere, planeMesh, monkey;
     CreateMesh(cube, "assets/meshes/cube.obj");
     CreateMesh(sphere, "assets/meshes/sphere.obj");
-    CreateMesh(plane, "assets/meshes/plane.obj");
+    CreateMesh(planeMesh, "assets/meshes/plane.obj");
     CreateMesh(monkey, "assets/meshes/monkey.obj");
 
     // Only one shader so we don't need to bind it for every object, or even every frame
@@ -78,6 +98,27 @@ int main()
         float dt = curr - prev, tt = glfwGetTime();
         prev = curr;
         curr = tt;
+
+        float planeDelta = rotationSpeed * dt;
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            planePitch += planeDelta;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            planePitch -= planeDelta;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            planeYaw += planeDelta;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            planeYaw -= planeDelta;
+        }
 
         OnInput(window);
         //Simulate(test, GRAVITY, dt);
@@ -110,12 +151,15 @@ int main()
         mvp = model * view * proj;
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
         glUniform3f(uColor, 0.375f, 0.375f, 0.375f);
-        glBindVertexArray(plane.vao);
-        glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
+        glBindVertexArray(planeMesh.vao);
+        //glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertexCount);
 
         // Entities
         for (const Entity& entity : All())
         {
+            if (entity.shapeType == PLANE)
+                continue;
+
             float r = entity.shape.sphere.radius;
             model = Scale(r, r, r) * Translate(entity.pos.x, entity.pos.y, entity.pos.z);
             mvp = model * view * proj;
@@ -124,6 +168,18 @@ int main()
             glBindVertexArray(sphere.vao);
             glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
         }
+
+        // Half-Plane
+        Entity& plane = Get(planeHandle);
+        Matrix planeMatrix = ToMatrix(FromEuler(planePitch, planeYaw, 0.0f));
+        Vector3 planeNormal = Up(planeMatrix);
+        plane.shape.plane.normal = planeNormal;
+        model = planeMatrix * Translate(plane.pos.x, plane.pos.y, plane.pos.z);
+        mvp = model * view * proj;
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniform3f(uColor, 1.0f, 0.0f, 1.0f);
+        glBindVertexArray(planeMesh.vao);
+        glDrawArrays(GL_TRIANGLES, 0, planeMesh.vertexCount);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
