@@ -45,15 +45,13 @@ int main()
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
     GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    Entity e;
-    e.pos = { 2.5, 0.0f, 0.0f };
-    Entity& test = Add(e);
     for (float i = -15.0f; i < 15.0f; i += 5.0f)
     {
         Entity entity;
+        entity.shapeType = SPHERE;
+        entity.shape.sphere.radius = 2.51f;
         entity.pos = { i, 50.0f, 0.0f };
         Add(entity);
-        printf("%f %f %f\n", test.pos.x, test.pos.y, test.pos.z);
     }
 
     Mesh cube, sphere, plane, monkey;
@@ -84,6 +82,14 @@ int main()
         OnInput(window);
         //Simulate(test, GRAVITY, dt);
         SimulateAll(GRAVITY, dt);
+        for (Entity& entity : All())
+            entity.color = { 0.0f, 1.0f, 0.0f };
+
+        for (HitPair hit : Hits())
+        {
+            hit.a->color = { 1.0f, 0.0f, 0.0f };
+            hit.b->color = { 1.0f, 0.0f, 0.0f };
+        }
 
         glClearColor(0.0f, 0.75f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -110,10 +116,11 @@ int main()
         // Entities
         for (const Entity& entity : All())
         {
-            model = Translate(entity.pos.x, entity.pos.y, entity.pos.z);
+            float r = entity.shape.sphere.radius;
+            model = Scale(r, r, r) * Translate(entity.pos.x, entity.pos.y, entity.pos.z);
             mvp = model * view * proj;
             glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-            glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+            glUniform3f(uColor, entity.color.r, entity.color.g, entity.color.b);
             glBindVertexArray(sphere.vao);
             glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
         }
