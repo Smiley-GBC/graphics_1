@@ -1,0 +1,2 @@
+Export everything with -z forward +y up.
+Transform in-game as needed.

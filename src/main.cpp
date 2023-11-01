@@ -1,115 +1,30 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <Math.h>
+#include <iostream>
 
-// Begone, foul fiend!
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-//#include <glm/gtc/type_ptr.hpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_opengl3.h>
 
 #include "Mesh.h"
+#include "Lines.h"
+#include "Shader.h"
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cassert>
-
+void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
 void OnResize(GLFWwindow* window, int width, int height);
 void OnInput(GLFWwindow* window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
-struct Color
-{
-    float r = 0.0f;
-    float g = 0.0f;
-    float b = 0.0f;
-    float a = 0.0f;
-};
-
-GLuint CreateShader(GLint type, const char* path)
-{
-    GLuint shader = 0;
-    try
-    {
-        // Load text file
-        std::ifstream file;
-        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        file.open(path);
-
-        // Interpret the file as a giant string
-        std::stringstream stream;
-        stream << file.rdbuf();
-        file.close();
-
-        // Verify shader type matches shader file extension
-        const char* ext = strrchr(path, '.');
-        switch (type)
-        {
-        case GL_VERTEX_SHADER:
-            assert(strcmp(ext, ".vert") == 0);
-            break;
-
-        case GL_FRAGMENT_SHADER:
-            assert(strcmp(ext, ".frag") == 0);
-            break;
-        default:
-            assert(false, "Invalid shader type");
-            break;
-        }
-
-        // Compile text as a shader
-        std::string str = stream.str();
-        const char* src = str.c_str();
-        shader = glCreateShader(type);
-        glShaderSource(shader, 1, &src, NULL);
-        glCompileShader(shader);
-
-        // Check for compilation errors
-        GLint success;
-        GLchar infoLog[512];
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success)
-        {
-            glGetShaderInfoLog(shader, 512, NULL, infoLog);
-            std::cout << "Shader failed to compile: \n" << infoLog << std::endl;
-        }
-    }
-    catch (std::ifstream::failure& e)
-    {
-        std::cout << "Shader (" << path << ") not found: " << e.what() << std::endl;
-    }
-    return shader;
-}
-
-GLuint CreateProgram(GLuint vs, GLuint fs)
-{
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vs);
-    glAttachShader(shaderProgram, fs);
-    glLinkProgram(shaderProgram);
-
-    // Check for linking errors
-    int success;
-    char infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        shaderProgram = GL_NONE;
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-
-    return shaderProgram;
-}
-
-int main()
+int main(const char* path)
 {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
@@ -126,95 +41,162 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
-    
-    // Only loading relevant shaders
-    GLuint vsTransform = CreateShader(GL_VERTEX_SHADER, "./assets/shaders/Transform.vert");
-    GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "./assets/shaders/Color.frag");
-    GLuint shaderTransform = CreateProgram(vsTransform, fsColor);
 
-    Mesh cube, monkey;
-    CreateMesh(cube, "assets/meshes/cube.obj");
-    CreateMesh(monkey, "assets/meshes/monkey.obj");
+    // Enable OpenGL debug context if context allows for debug context
+    int flags; glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+    if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(glDebugOutput, nullptr);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+    }
 
-    // Only one shader so we don't need to bind it for every object, or even every frame
-    GLuint shader = shaderTransform;
-    glUseProgram(shader);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
 
-    // Setup OpenGL state
-    glEnable(GL_DEPTH_TEST);// Disabled by default
-    glEnable(GL_CULL_FACE); // Disabled by default
-    glCullFace(GL_BACK);    // GL_BACK by default
-    glFrontFace(GL_CCW);    // GL_CCW by default
+    Mesh van, plane, cube1x1;
+    CreateMesh(van, "assets/meshes/van.obj");
+    CreateMesh(plane, "assets/meshes/plane_xz_1x1.obj");
+    CreateMesh(cube1x1, "assets/meshes/cube_1x1.obj");
+
+    GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "assets/shaders/default.vert");
+    GLuint vsFsq = CreateShader(GL_VERTEX_SHADER, "assets/shaders/fsq.vert");
+    GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/color.frag");
+    GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/normals.frag");
+    GLuint fsGradient = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/gradient.frag");
+    GLuint fsFractal = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/fractal.frag");
+
+    GLuint shaderColor = CreateProgram(vsDefault, fsColor);
+    GLuint shaderNormals = CreateProgram(vsDefault, fsNormals);
+    GLuint shaderGradient = CreateProgram(vsFsq, fsGradient);
+    GLuint shaderFractal = CreateProgram(vsFsq, fsFractal);
+
+    Vector3 cameraPosition = Vector3{ 1.0f, 1.0f, 1.0f } * 50.0f;
+    Vector3 vanTranslation{};
+    float vanRotationY = 0.0f;
+    float vanSpeed = 100.0f;
+    float vanRotationSpeed = 250.0f * DEG2RAD;
 
     float prev = glfwGetTime();
     float curr = prev;
 
+    GLuint vaoFsq;
+    glGenVertexArrays(1, &vaoFsq);
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window))
     {
         float dt = curr - prev, tt = glfwGetTime();
         prev = curr;
         curr = tt;
-
+        float vanTranslationDelta = vanSpeed * dt;
+        float vanRotationDelta = vanRotationSpeed * dt;
         OnInput(window);
 
-        Color bg{ 0.0f, 0.0f, 0.0f, 1.0f };
-        Color tint{ 1.0f, 1.0f, 1.0f, 1.0f };
+        Matrix translation = MatrixIdentity();
+        Matrix rotation = MatrixIdentity();
+        Matrix scale = MatrixIdentity();
+        Matrix proj = Perspective(60.0f * DEG2RAD, SCR_WIDTH / (float)SCR_HEIGHT, 0.01f, 1000.0f);
+        Matrix view = LookAt(cameraPosition, {}, { 0.0f, 1.0f, 0.0f });
+        Matrix model = scale * rotation * translation;
+        Matrix mvp = model * view * proj;
+        
+        GLuint shader = GL_NONE;
+        GLint uTime = GL_NONE;
+        GLint uColor = GL_NONE;
+        GLint uResolution = GL_NONE;
+        GLint uTransform = GL_NONE;
 
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
+        glClearColor(0.25f, 0.75f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        GLint uColor = glGetUniformLocation(shader, "u_color");
-        GLint uTransform = glGetUniformLocation(shader, "u_transform");
+        // Draw fsq
+        glDepthMask(GL_FALSE);
+        glUseProgram(shaderFractal);
+        uTime = glGetUniformLocation(shaderFractal, "u_time");
+        uResolution = glGetUniformLocation(shaderFractal, "u_resolution");
+        glUniform1f(uTime, tt);
+        glUniform2f(uResolution, SCR_WIDTH, SCR_HEIGHT);
+        glBindVertexArray(vaoFsq);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDepthMask(GL_TRUE);
+
+        // Translate van
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            vanRotationY += vanRotationDelta;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            vanRotationY -= vanRotationDelta;
+        }
         
-        Matrix scale = MatrixIdentity();
-        Matrix rotation = MatrixIdentity();
-        Matrix translation = MatrixIdentity();
-        Matrix model = MatrixIdentity();//scale * rotation * translation;
-        const Matrix view = LookAt({ 0.0f, 0.0f, 15.0f }, {}, { 0.0f, 1.0f, 0.0f });
-        const Matrix proj = Perspective(60.0f * DEG2RAD, (float)SCR_WIDTH / (float)(SCR_HEIGHT), 0.001f, 1000.0f);
-        Matrix mvp = MatrixIdentity();//model * view * proj;
-
-        // Cube 1:
-        //model = Translate(-1.0f, 0.0, 1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 1.0f, 0.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 2:
-        //model = Translate(0.0f, 0.0f, 0.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 1.0f, 0.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-        //
-        //// Cube 3:
-        //model  = Translate(1.0f, 0.0f, -1.0f);
-        //mvp = model * view * proj;
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform3f(uColor, 0.0f, 0.0f, 1.0f);
-        //glBindVertexArray(cube.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-
-        // Suzane (monkey)
-        model = Scale(5.0f, 5.0f, 5.0f);
+        // Rotate van
+        Matrix vanRotation = RotateY(vanRotationY);
+        Vector3 vanForward = Forward(vanRotation);
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            vanTranslation = vanTranslation + vanForward * vanTranslationDelta;
+        }
+        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            vanTranslation = vanTranslation - vanForward * vanTranslationDelta;
+        }
+        
+        // Draw van
+        model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        shader = shaderNormals;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uTransform = glGetUniformLocation(shader, "u_mvp");
+        glUseProgram(shader);
         glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
-        glBindVertexArray(monkey.vao);
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, monkey.vertexCount);
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glBindVertexArray(van.vao);
+        glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
+        
+        // Right is CCW due to RHS (meaning right is actually left xD)
+        // Vector3 right = Right(Orientate({ 0.0f, 0.0f, 1.0f }));
+        // Log the above and see for yourself! ([0, 0, -1] yields [1, 0, 0]).
+        // An LHS is the only way to fix this. I don't want an LHS cause OGL is an RHS...
+        float lineLength = 7.5f;
+        Vector3 forward = Forward(vanRotation) * lineLength + vanTranslation;
+        Vector3 right = Right(vanRotation) * lineLength + vanTranslation;
+        Vector3 up = Up(vanRotation) * lineLength + vanTranslation;
+        DrawLine(vanTranslation, forward, view, proj, cube1x1, shaderColor, BLUE, 0.1f, 0.1f);
+        DrawLine(vanTranslation, right, view, proj, cube1x1, shaderColor, RED, 0.1f, 0.1f);
+        DrawLine(vanTranslation, up, view, proj, cube1x1, shaderColor, GREEN, 0.1f, 0.1f);
+
+        // Draw plane
+        mvp = Scale(100.0f, 1.0f, 100.0f) * view * proj;
+        shader = shaderColor;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uTransform = glGetUniformLocation(shader, "u_mvp");
+        glUseProgram(shader);
+        glUniform3f(uColor, 0.375f, 0.375f, 0.375f);
+        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glBindVertexArray(plane.vao);
+        glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
+
+        // Draw UI
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SliderFloat3("Camera Position", (float*)&cameraPosition, -100.0f, 100.0f);
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    DestroyMesh(monkey);
-    DestroyMesh(cube);
-    glDeleteProgram(shaderTransform);
-
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
     return 0;
 }
@@ -228,4 +210,45 @@ void OnInput(GLFWwindow* window)
 void OnResize(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void APIENTRY glDebugOutput(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam)
+{
+    // ignore non-significant error/warning codes
+    if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+
+    std::cout << "---------------" << std::endl;
+    std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+    switch (source)
+    {
+    case GL_DEBUG_SOURCE_API:             std::cout << "Source: API"; break;
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   std::cout << "Source: Window System"; break;
+    case GL_DEBUG_SOURCE_SHADER_COMPILER: std::cout << "Source: Shader Compiler"; break;
+    case GL_DEBUG_SOURCE_THIRD_PARTY:     std::cout << "Source: Third Party"; break;
+    case GL_DEBUG_SOURCE_APPLICATION:     std::cout << "Source: Application"; break;
+    case GL_DEBUG_SOURCE_OTHER:           std::cout << "Source: Other"; break;
+    } std::cout << std::endl;
+
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:               std::cout << "Type: Error"; break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: std::cout << "Type: Deprecated Behaviour"; break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  std::cout << "Type: Undefined Behaviour"; break;
+    case GL_DEBUG_TYPE_PORTABILITY:         std::cout << "Type: Portability"; break;
+    case GL_DEBUG_TYPE_PERFORMANCE:         std::cout << "Type: Performance"; break;
+    case GL_DEBUG_TYPE_MARKER:              std::cout << "Type: Marker"; break;
+    case GL_DEBUG_TYPE_PUSH_GROUP:          std::cout << "Type: Push Group"; break;
+    case GL_DEBUG_TYPE_POP_GROUP:           std::cout << "Type: Pop Group"; break;
+    case GL_DEBUG_TYPE_OTHER:               std::cout << "Type: Other"; break;
+    } std::cout << std::endl;
+
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:         std::cout << "Severity: high"; break;
+    case GL_DEBUG_SEVERITY_MEDIUM:       std::cout << "Severity: medium"; break;
+    case GL_DEBUG_SEVERITY_LOW:          std::cout << "Severity: low"; break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION: std::cout << "Severity: notification"; break;
+    } std::cout << std::endl;
+    std::cout << std::endl;
 }
