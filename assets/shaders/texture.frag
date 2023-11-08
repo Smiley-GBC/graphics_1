@@ -11,5 +11,6 @@ in vec2 uv;
 
 void main()
 {
-    FragColor = vec4(texture(u_tex_slot, uv).rgb, 1.0);
+    vec3 texColor = texture(u_tex_slot, uv).rgb;
+    FragColor = vec4(texColor * u_color, 1.0);
 }

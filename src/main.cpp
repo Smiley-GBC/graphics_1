@@ -85,11 +85,25 @@ int main(const char* path)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
 
-    Mesh van, plane, cube1x1;
+    Mesh van, plane, cube1x1, ct4;
     CreateMesh(van, "assets/meshes/van.obj");
+    CreateMesh(ct4, "assets/meshes/ct4.obj");
     CreateMesh(plane, "assets/meshes/plane_xz_1x1.obj");
     CreateMesh(cube1x1, "assets/meshes/cube_1x1.obj");
+
     GLuint vanTex = CreateTexture("assets/textures/van.png");
+    GLuint ct4Textures[4] =
+    {
+        CreateTexture("assets/textures/ct4_red.png"),
+        CreateTexture("assets/textures/ct4_orange.png"),
+        CreateTexture("assets/textures/ct4_blue.png"),
+        CreateTexture("assets/textures/ct4_black.png")
+    };
+    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_red.png");
+    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_orange.png");
+    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_blue.png");
+    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_black.png");
+    int textureIndex = 0;
 
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "assets/shaders/default.vert");
     GLuint vsFsq = CreateShader(GL_VERTEX_SHADER, "assets/shaders/fsq.vert");
@@ -111,6 +125,7 @@ int main(const char* path)
     float vanRotationY = 0.0f * DEG2RAD;
     float vanSpeed = 100.0f;
     float vanRotationSpeed = 250.0f * DEG2RAD;
+    Vector3 vanColor{ 1.0f, 1.0f, 1.0f };
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -140,6 +155,7 @@ int main(const char* path)
         GLuint shader = GL_NONE;
         GLint uTime = GL_NONE;
         GLint uColor = GL_NONE;
+        GLint uTexture = GL_NONE;
         GLint uResolution = GL_NONE;
         GLint uTransform = GL_NONE;
 
@@ -183,14 +199,20 @@ int main(const char* path)
         model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
         shader = shaderTexture;
-        //uColor = glGetUniformLocation(shader, "u_color");
+        uColor = glGetUniformLocation(shader, "u_color");
         uTransform = glGetUniformLocation(shader, "u_mvp");
-        glBindTexture(GL_TEXTURE_2D, vanTex);
+        uTexture = glGetUniformLocation(shader, "u_tex_slot");
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndex]);
+
         glUseProgram(shader);
-        glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        glUniform3f(uColor, vanColor.x, vanColor.y, vanColor.z);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        glBindVertexArray(van.vao);
-        glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
+        glUniform1i(uTexture, 0);
+
+        glBindVertexArray(ct4.vao);
+        glDrawArrays(GL_TRIANGLES, 0, ct4.vertexCount);
         
         // Right is CCW due to RHS (meaning right is actually left xD)
         // Vector3 right = Right(Orientate({ 0.0f, 0.0f, 1.0f }));
@@ -222,6 +244,15 @@ int main(const char* path)
         ImGui::SliderFloat3("Camera Position", (float*)&cameraPosition, -100.0f, 100.0f);
         ImGui::SliderAngle("Van Pitch", &vanRotationX);
         ImGui::SliderAngle("Van Yaw", &vanRotationY);
+
+        ImGui::Separator();
+        ImGui::RadioButton("Red", &textureIndex, 0); ImGui::SameLine();
+        ImGui::RadioButton("Orange", &textureIndex, 1); ImGui::SameLine();
+        ImGui::RadioButton("Blue", &textureIndex, 2); ImGui::SameLine();
+        ImGui::RadioButton("Black", &textureIndex, 3);
+        ImGui::Separator();
+        ImGui::ColorPicker3("Van Colour", (float*)&vanColor);
+
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
