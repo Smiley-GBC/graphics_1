@@ -99,22 +99,21 @@ int main(const char* path)
         CreateTexture("assets/textures/ct4_blue.png"),
         CreateTexture("assets/textures/ct4_black.png")
     };
-    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_red.png");
-    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_orange.png");
-    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_blue.png");
-    //GLuint ct4Tex = CreateTexture("assets/textures/ct4_black.png");
-    int textureIndex = 0;
+    int textureIndexA = 0;
+    int textureIndexB = 0;
 
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "assets/shaders/default.vert");
     GLuint vsFsq = CreateShader(GL_VERTEX_SHADER, "assets/shaders/fsq.vert");
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/color.frag");
     GLuint fsTexture = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/texture.frag");
+    GLuint fsTextureMix = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/texture_mix.frag");
     GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/normals.frag");
     GLuint fsGradient = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/gradient.frag");
     GLuint fsFractal = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/fractal.frag");
 
     GLuint shaderColor = CreateProgram(vsDefault, fsColor);
     GLuint shaderTexture = CreateProgram(vsDefault, fsTexture);
+    GLuint shaderTextureMix = CreateProgram(vsDefault, fsTextureMix);
     GLuint shaderNormals = CreateProgram(vsDefault, fsNormals);
     GLuint shaderGradient = CreateProgram(vsFsq, fsGradient);
     GLuint shaderFractal = CreateProgram(vsFsq, fsFractal);
@@ -126,6 +125,7 @@ int main(const char* path)
     float vanSpeed = 100.0f;
     float vanRotationSpeed = 250.0f * DEG2RAD;
     Vector3 vanColor{ 1.0f, 1.0f, 1.0f };
+    float t = 0.0f;
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -154,8 +154,11 @@ int main(const char* path)
         
         GLuint shader = GL_NONE;
         GLint uTime = GL_NONE;
+        GLint uT = GL_NONE;
         GLint uColor = GL_NONE;
         GLint uTexture = GL_NONE;
+        GLint uTextureA = GL_NONE;
+        GLint uTextureB = GL_NONE;
         GLint uResolution = GL_NONE;
         GLint uTransform = GL_NONE;
 
@@ -198,18 +201,26 @@ int main(const char* path)
         // Draw van
         model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
-        shader = shaderTexture;
+        shader = shaderTextureMix;
         uColor = glGetUniformLocation(shader, "u_color");
+        uT = glGetUniformLocation(shader, "u_t");
         uTransform = glGetUniformLocation(shader, "u_mvp");
-        uTexture = glGetUniformLocation(shader, "u_tex_slot");
+        //uTexture = glGetUniformLocation(shader, "u_tex_slot");
+        uTextureA = glGetUniformLocation(shader, "u_tex_slot_a");
+        uTextureB = glGetUniformLocation(shader, "u_tex_slot_b");
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndex]);
+        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndexA]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndexB]);
 
         glUseProgram(shader);
         glUniform3f(uColor, vanColor.x, vanColor.y, vanColor.z);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        glUniform1i(uTexture, 0);
+        //glUniform1i(uTexture, 0);
+        glUniform1i(uTextureA, 0);
+        glUniform1i(uTextureB, 1);
+        glUniform1f(uT, t);
 
         glBindVertexArray(ct4.vao);
         glDrawArrays(GL_TRIANGLES, 0, ct4.vertexCount);
@@ -246,10 +257,18 @@ int main(const char* path)
         ImGui::SliderAngle("Van Yaw", &vanRotationY);
 
         ImGui::Separator();
-        ImGui::RadioButton("Red", &textureIndex, 0); ImGui::SameLine();
-        ImGui::RadioButton("Orange", &textureIndex, 1); ImGui::SameLine();
-        ImGui::RadioButton("Blue", &textureIndex, 2); ImGui::SameLine();
-        ImGui::RadioButton("Black", &textureIndex, 3);
+        ImGui::SliderFloat("Interpolation", &t, 0.0f, 1.0f);
+
+        ImGui::RadioButton("Red A", &textureIndexA, 0); ImGui::SameLine();
+        ImGui::RadioButton("Orange A", &textureIndexA, 1); ImGui::SameLine();
+        ImGui::RadioButton("Blue A", &textureIndexA, 2); ImGui::SameLine();
+        ImGui::RadioButton("Black A", &textureIndexA, 3);
+
+        ImGui::RadioButton("Red B", &textureIndexB, 0); ImGui::SameLine();
+        ImGui::RadioButton("Orange B", &textureIndexB, 1); ImGui::SameLine();
+        ImGui::RadioButton("Blue B", &textureIndexB, 2); ImGui::SameLine();
+        ImGui::RadioButton("Black B", &textureIndexB, 3);
+
         ImGui::Separator();
         ImGui::ColorPicker3("Van Colour", (float*)&vanColor);
 
