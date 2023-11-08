@@ -76,7 +76,8 @@ int main(const char* path)
 
     Vector3 cameraPosition = Vector3{ 1.0f, 1.0f, 1.0f } * 50.0f;
     Vector3 vanTranslation{};
-    float vanRotationY = 0.0f;
+    float vanRotationX = 0.0f * DEG2RAD;
+    float vanRotationY = 0.0f * DEG2RAD;
     float vanSpeed = 100.0f;
     float vanRotationSpeed = 250.0f * DEG2RAD;
 
@@ -136,7 +137,7 @@ int main(const char* path)
         }
         
         // Rotate van
-        Matrix vanRotation = RotateY(vanRotationY);
+        Matrix vanRotation = RotateY(vanRotationY) * RotateX(vanRotationX);
         Vector3 vanForward = Forward(vanRotation);
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         {
@@ -187,6 +188,8 @@ int main(const char* path)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::SliderFloat3("Camera Position", (float*)&cameraPosition, -100.0f, 100.0f);
+        ImGui::SliderAngle("Van Pitch", &vanRotationX);
+        ImGui::SliderAngle("Van Yaw", &vanRotationY);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
