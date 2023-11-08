@@ -3,6 +3,9 @@
 #include <Math.h>
 #include <iostream>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
@@ -17,6 +20,31 @@ void OnInput(GLFWwindow* window);
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
+
+GLuint CreateTexture(const char* path)
+{
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    int width, height, channels;
+    unsigned char* data = stbi_load(path, &width, &height, &channels, 0);
+    if (data)
+    {
+        assert(channels == 3 || channels == 4);
+        GLenum format = channels == 3 ? GL_RGB : GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    }
+    else
+    {
+        assert(false, "Texture load failed");
+    }
+    stbi_image_free(data);
+    return texture;
+}
 
 int main(const char* path)
 {
@@ -61,15 +89,18 @@ int main(const char* path)
     CreateMesh(van, "assets/meshes/van.obj");
     CreateMesh(plane, "assets/meshes/plane_xz_1x1.obj");
     CreateMesh(cube1x1, "assets/meshes/cube_1x1.obj");
+    GLuint vanTex = CreateTexture("assets/textures/van.png");
 
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "assets/shaders/default.vert");
     GLuint vsFsq = CreateShader(GL_VERTEX_SHADER, "assets/shaders/fsq.vert");
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/color.frag");
+    GLuint fsTexture = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/texture.frag");
     GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/normals.frag");
     GLuint fsGradient = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/gradient.frag");
     GLuint fsFractal = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/fractal.frag");
 
     GLuint shaderColor = CreateProgram(vsDefault, fsColor);
+    GLuint shaderTexture = CreateProgram(vsDefault, fsTexture);
     GLuint shaderNormals = CreateProgram(vsDefault, fsNormals);
     GLuint shaderGradient = CreateProgram(vsFsq, fsGradient);
     GLuint shaderFractal = CreateProgram(vsFsq, fsFractal);
@@ -151,9 +182,10 @@ int main(const char* path)
         // Draw van
         model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
-        shader = shaderNormals;
-        uColor = glGetUniformLocation(shader, "u_color");
+        shader = shaderTexture;
+        //uColor = glGetUniformLocation(shader, "u_color");
         uTransform = glGetUniformLocation(shader, "u_mvp");
+        glBindTexture(GL_TEXTURE_2D, vanTex);
         glUseProgram(shader);
         glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);

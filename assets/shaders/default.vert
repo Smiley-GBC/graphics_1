@@ -11,12 +11,14 @@ uniform mat4 u_mvp;
 
 out vec3 color;
 out vec3 normal;
+out vec2 uv;
 
 void main()
 {
    vec4 position = vec4(aPosition.x, aPosition.y, aPosition.z, 1.0);
    normal = normalize(aNormal);
    color = normal * 0.5 + 0.5;
+   uv = aTexure;
    gl_Position = u_mvp * position;
    //gl_Position = u_p * u_v * u_m * vec4(aPos.x, aPos.y, aPos.z, 1.0);
 }
