@@ -85,10 +85,10 @@ int main(const char* path)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
 
-    Mesh van, plane, cube1x1, ct4, cybertruck;// , airplane;
+    Mesh van, plane, cube1x1, ct4, cars;// , airplane;
     CreateMesh(van, "assets/meshes/van.obj");
     CreateMesh(ct4, "assets/meshes/ct4.obj");
-    CreateMesh(cybertruck, "assets/meshes/cybertruck.obj");
+    CreateMesh(cars, "assets/meshes/buy_1_get_3.obj");
     //CreateMesh(airplane, "assets/meshes/airplane.obj");
     CreateMesh(plane, "assets/meshes/plane_xz_1x1.obj");
     CreateMesh(cube1x1, "assets/meshes/cube_1x1.obj");
@@ -136,6 +136,7 @@ int main(const char* path)
     float vanRotationSpeed = 250.0f * DEG2RAD;
     Vector3 vanColor{ 1.0f, 1.0f, 1.0f };
 
+    Vector3 lightPosition{ 0.0f, 10.0f, 0.0f };
     Vector3 lightColor{ 1.0f, 1.0f, 1.0f };
     float ambientStrength = 1.0f;
 
@@ -261,23 +262,25 @@ int main(const char* path)
             vanTranslation = vanTranslation - vanForward * vanTranslationDelta;
         }
 
-        // Illuminated CT4
+        // Illuminated Elon Musk
         model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
         shader = shaderPhong;
         GLint uObjectColor = glGetUniformLocation(shader, "u_object_color");
+        GLint uLightPosition = glGetUniformLocation(shader, "u_light_position");
         GLint uLightColor = glGetUniformLocation(shader, "u_light_color");
         GLint uAmbientStrength = glGetUniformLocation(shader, "u_ambient_strength");
         uMVP = glGetUniformLocation(shader, "u_mvp");
         uModel = glGetUniformLocation(shader, "u_m");
         glUseProgram(shader);
-        glUniform3fv(uObjectColor, 1, (float*)&vanColor);
+        glUniform3fv(uLightPosition, 1, (float*)&lightPosition);
         glUniform3fv(uLightColor, 1, (float*)&lightColor);
+        glUniform3fv(uObjectColor, 1, (float*)&vanColor);
         glUniform1f(uAmbientStrength, ambientStrength);
         glUniformMatrix4fv(uMVP, 1, GL_TRUE, (float*)&mvp);
         glUniformMatrix4fv(uModel, 1, GL_TRUE, (float*)&model);
-        glBindVertexArray(van.vao);
-        glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
+        glBindVertexArray(cars.vao);
+        glDrawArrays(GL_TRIANGLES, 0, cars.vertexCount);
 
         // Draw local axes
         float lineLength = 7.5f;
@@ -299,6 +302,17 @@ int main(const char* path)
         glBindVertexArray(plane.vao);
         glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
 
+        // Draw light
+        mvp = Translate(lightPosition.x, lightPosition.y, lightPosition.z) * view * proj;
+        shader = shaderColor;
+        uColor = glGetUniformLocation(shader, "u_color");
+        uMVP = glGetUniformLocation(shader, "u_mvp");
+        glUseProgram(shader);
+        glUniform3fv(uColor, 1, (float*)&lightColor);
+        glUniformMatrix4fv(uMVP, 1, GL_TRUE, &mvp.m0);
+        glBindVertexArray(cube1x1.vao);
+        glDrawArrays(GL_TRIANGLES, 0, cube1x1.vertexCount);
+
         // Draw UI
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -309,10 +323,13 @@ int main(const char* path)
         ImGui::SliderAngle("Camera Yaw", &cameraYaw);
 
         ImGui::Separator();
+        ImGui::SliderFloat3("Light Position", (float*)&lightPosition, -100.0f, 100.0f);
+        ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
+        ImGui::ColorPicker3("Light Colour", (float*)&lightColor);
+
+        ImGui::Separator();
         ImGui::SliderAngle("Van Yaw", &vanRotationY);
         ImGui::ColorPicker3("Van Colour", (float*)&vanColor);
-        ImGui::ColorPicker3("Light Colour", (float*)&lightColor);
-        ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
