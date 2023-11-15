@@ -135,7 +135,9 @@ int main(const char* path)
     float vanSpeed = 100.0f;
     float vanRotationSpeed = 250.0f * DEG2RAD;
     Vector3 vanColor{ 1.0f, 1.0f, 1.0f };
+
     Vector3 lightColor{ 1.0f, 1.0f, 1.0f };
+    float ambientStrength = 1.0f;
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -264,10 +266,12 @@ int main(const char* path)
         shader = shaderPhong;
         GLint uObjectColor = glGetUniformLocation(shader, "u_object_color");
         GLint uLightColor = glGetUniformLocation(shader, "u_light_color");
+        GLint uAmbientStrength = glGetUniformLocation(shader, "u_ambient_strength");
         uTransform = glGetUniformLocation(shader, "u_mvp");
         glUseProgram(shader);
         glUniform3fv(uObjectColor, 1, (float*)&vanColor);
         glUniform3fv(uLightColor, 1, (float*)&lightColor);
+        glUniform1f(uAmbientStrength, ambientStrength);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
         glBindVertexArray(van.vao);
         glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
@@ -305,6 +309,7 @@ int main(const char* path)
         ImGui::SliderAngle("Van Yaw", &vanRotationY);
         ImGui::ColorPicker3("Van Colour", (float*)&vanColor);
         ImGui::ColorPicker3("Light Colour", (float*)&lightColor);
+        ImGui::SliderFloat("Ambient Strength", &ambientStrength, 0.0f, 1.0f);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
