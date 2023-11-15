@@ -85,12 +85,15 @@ int main(const char* path)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
 
-    Mesh van, plane, cube1x1, ct4;
+    Mesh van, plane, cube1x1, ct4, cybertruck;// , airplane;
     CreateMesh(van, "assets/meshes/van.obj");
     CreateMesh(ct4, "assets/meshes/ct4.obj");
+    CreateMesh(cybertruck, "assets/meshes/cybertruck.obj");
+    //CreateMesh(airplane, "assets/meshes/airplane.obj");
     CreateMesh(plane, "assets/meshes/plane_xz_1x1.obj");
     CreateMesh(cube1x1, "assets/meshes/cube_1x1.obj");
 
+    //GLuint airplaneTex = CreateTexture("assets/textures/airplane.png");
     GLuint vanTex = CreateTexture("assets/textures/van.png");
     GLuint ct4Textures[4] =
     {
@@ -224,6 +227,23 @@ int main(const char* path)
 
         glBindVertexArray(ct4.vao);
         glDrawArrays(GL_TRIANGLES, 0, ct4.vertexCount);
+
+        // Draw airplane
+        // Note to self -- don't forget to set uniform colour!
+        //model = vanRotation * Translate(vanTranslation.x + 10.0f, vanTranslation.y, vanTranslation.z);
+        //mvp = model * view * proj;
+        //shader = shaderTexture;
+        //uColor = glGetUniformLocation(shader, "u_color");
+        //uTexture = glGetUniformLocation(shader, "u_tex_slot");
+        //uTransform = glGetUniformLocation(shader, "u_mvp");
+        //glUseProgram(shader);
+        //glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, airplaneTex);
+        //glUniform1i(uTexture, 0);
+        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        //glBindVertexArray(airplane.vao);
+        //glDrawArrays(GL_TRIANGLES, 0, airplane.vertexCount);
         
         // Right is CCW due to RHS (meaning right is actually left xD)
         // Vector3 right = Right(Orientate({ 0.0f, 0.0f, 1.0f }));
