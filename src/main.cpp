@@ -108,6 +108,7 @@ int main(const char* path)
     GLuint vsDefault = CreateShader(GL_VERTEX_SHADER, "assets/shaders/default.vert");
     GLuint vsFsq = CreateShader(GL_VERTEX_SHADER, "assets/shaders/fsq.vert");
     GLuint fsColor = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/color.frag");
+    GLuint fsPhong = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/phong.frag");
     GLuint fsTexture = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/texture.frag");
     GLuint fsTextureMix = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/texture_mix.frag");
     GLuint fsNormals = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/normals.frag");
@@ -115,6 +116,7 @@ int main(const char* path)
     GLuint fsFractal = CreateShader(GL_FRAGMENT_SHADER, "assets/shaders/fractal.frag");
 
     GLuint shaderColor = CreateProgram(vsDefault, fsColor);
+    GLuint shaderPhong = CreateProgram(vsDefault, fsPhong);
     GLuint shaderTexture = CreateProgram(vsDefault, fsTexture);
     GLuint shaderTextureMix = CreateProgram(vsDefault, fsTextureMix);
     GLuint shaderNormals = CreateProgram(vsDefault, fsNormals);
@@ -133,7 +135,7 @@ int main(const char* path)
     float vanSpeed = 100.0f;
     float vanRotationSpeed = 250.0f * DEG2RAD;
     Vector3 vanColor{ 1.0f, 1.0f, 1.0f };
-    float t = 0.0f;
+    Vector3 lightColor{ 1.0f, 1.0f, 1.0f };
 
     float prev = glfwGetTime();
     float curr = prev;
@@ -215,11 +217,8 @@ int main(const char* path)
         
         GLuint shader = GL_NONE;
         GLint uTime = GL_NONE;
-        GLint uT = GL_NONE;
         GLint uColor = GL_NONE;
         GLint uTexture = GL_NONE;
-        GLint uTextureA = GL_NONE;
-        GLint uTextureB = GL_NONE;
         GLint uResolution = GL_NONE;
         GLint uTransform = GL_NONE;
 
@@ -258,55 +257,22 @@ int main(const char* path)
         {
             vanTranslation = vanTranslation - vanForward * vanTranslationDelta;
         }
-        
-        // Draw van
+
+        // Illuminated CT4
         model = vanRotation * Translate(vanTranslation.x, vanTranslation.y, vanTranslation.z);
         mvp = model * view * proj;
-        shader = shaderTextureMix;
-        uColor = glGetUniformLocation(shader, "u_color");
-        uT = glGetUniformLocation(shader, "u_t");
+        shader = shaderPhong;
+        GLint uObjectColor = glGetUniformLocation(shader, "u_object_color");
+        GLint uLightColor = glGetUniformLocation(shader, "u_light_color");
         uTransform = glGetUniformLocation(shader, "u_mvp");
-        //uTexture = glGetUniformLocation(shader, "u_tex_slot");
-        uTextureA = glGetUniformLocation(shader, "u_tex_slot_a");
-        uTextureB = glGetUniformLocation(shader, "u_tex_slot_b");
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndexA]);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, ct4Textures[textureIndexB]);
-
         glUseProgram(shader);
-        glUniform3f(uColor, vanColor.x, vanColor.y, vanColor.z);
+        glUniform3fv(uObjectColor, 1, (float*)&vanColor);
+        glUniform3fv(uLightColor, 1, (float*)&lightColor);
         glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glUniform1i(uTexture, 0);
-        glUniform1i(uTextureA, 0);
-        glUniform1i(uTextureB, 1);
-        glUniform1f(uT, t);
+        glBindVertexArray(van.vao);
+        glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
 
-        glBindVertexArray(ct4.vao);
-        glDrawArrays(GL_TRIANGLES, 0, ct4.vertexCount);
-
-        // Draw airplane
-        // Note to self -- don't forget to set uniform colour!
-        //model = vanRotation * Translate(vanTranslation.x + 10.0f, vanTranslation.y, vanTranslation.z);
-        //mvp = model * view * proj;
-        //shader = shaderTexture;
-        //uColor = glGetUniformLocation(shader, "u_color");
-        //uTexture = glGetUniformLocation(shader, "u_tex_slot");
-        //uTransform = glGetUniformLocation(shader, "u_mvp");
-        //glUseProgram(shader);
-        //glUniform3f(uColor, 1.0f, 1.0f, 1.0f);
-        //glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, airplaneTex);
-        //glUniform1i(uTexture, 0);
-        //glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
-        //glBindVertexArray(airplane.vao);
-        //glDrawArrays(GL_TRIANGLES, 0, airplane.vertexCount);
-        
-        // Right is CCW due to RHS (meaning right is actually left xD)
-        // Vector3 right = Right(Orientate({ 0.0f, 0.0f, 1.0f }));
-        // Log the above and see for yourself! ([0, 0, -1] yields [1, 0, 0]).
-        // An LHS is the only way to fix this. I don't want an LHS cause OGL is an RHS...
+        // Draw local axes
         float lineLength = 7.5f;
         Vector3 forward = Forward(vanRotation) * lineLength + vanTranslation;
         Vector3 right = Right(vanRotation) * lineLength + vanTranslation;
@@ -330,25 +296,15 @@ int main(const char* path)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
         ImGui::SliderFloat3("Camera Position", (float*)&cameraPosition, -100.0f, 100.0f);
-        ImGui::SliderAngle("Van Pitch", &vanRotationX);
+        ImGui::SliderAngle("Camera Pitch", &cameraPitch);
+        ImGui::SliderAngle("Camera Yaw", &cameraYaw);
+
+        ImGui::Separator();
         ImGui::SliderAngle("Van Yaw", &vanRotationY);
-
-        ImGui::Separator();
-        ImGui::SliderFloat("Interpolation", &t, 0.0f, 1.0f);
-
-        ImGui::RadioButton("Red A", &textureIndexA, 0); ImGui::SameLine();
-        ImGui::RadioButton("Orange A", &textureIndexA, 1); ImGui::SameLine();
-        ImGui::RadioButton("Blue A", &textureIndexA, 2); ImGui::SameLine();
-        ImGui::RadioButton("Black A", &textureIndexA, 3);
-
-        ImGui::RadioButton("Red B", &textureIndexB, 0); ImGui::SameLine();
-        ImGui::RadioButton("Orange B", &textureIndexB, 1); ImGui::SameLine();
-        ImGui::RadioButton("Blue B", &textureIndexB, 2); ImGui::SameLine();
-        ImGui::RadioButton("Black B", &textureIndexB, 3);
-
-        ImGui::Separator();
         ImGui::ColorPicker3("Van Colour", (float*)&vanColor);
+        ImGui::ColorPicker3("Light Colour", (float*)&lightColor);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
