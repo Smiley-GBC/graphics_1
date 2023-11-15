@@ -122,6 +122,11 @@ int main(const char* path)
     GLuint shaderFractal = CreateProgram(vsFsq, fsFractal);
 
     Vector3 cameraPosition = Vector3{ 1.0f, 1.0f, 1.0f } * 50.0f;
+    float cameraPitch = 25.0f * DEG2RAD;
+    float cameraYaw = 180.0f * DEG2RAD;
+    float cameraLinearSpeed = 100.0f;
+    float cameraAngularSpeed = 250.0f * DEG2RAD;
+
     Vector3 vanTranslation{};
     float vanRotationX = 0.0f * DEG2RAD;
     float vanRotationY = 0.0f * DEG2RAD;
@@ -145,13 +150,66 @@ int main(const char* path)
         curr = tt;
         float vanTranslationDelta = vanSpeed * dt;
         float vanRotationDelta = vanRotationSpeed * dt;
+        float cameraTranslationDelta = cameraLinearSpeed * dt;
+        float cameraRotationDelta = cameraAngularSpeed * dt;
         OnInput(window);
+
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+            Vector2 center{ SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f };
+            Vector2 delta = Normalize(Vector2{ (float)x - center.x, (float)y - center.y });
+            cameraPitch += delta.y * cameraRotationDelta;
+            cameraYaw -= delta.x * cameraRotationDelta;
+            glfwSetCursorPos(window, center.x, center.y);
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+
+        Matrix cameraOrientation = ToMatrix(FromEuler(cameraPitch, cameraYaw, 0.0f));
+        Vector3 cameraForward = Forward(cameraOrientation);
+        Vector3 cameraRight = Right(cameraOrientation);
+        Vector3 cameraUp = Up(cameraOrientation);
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition + cameraForward * cameraTranslationDelta;
+        }
+
+        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition - cameraForward * cameraTranslationDelta;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition + cameraRight * cameraTranslationDelta;
+        }
+
+        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition - cameraRight * cameraTranslationDelta;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition + cameraUp * cameraTranslationDelta;
+        }
+
+        else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        {
+            cameraPosition = cameraPosition - cameraUp * cameraTranslationDelta;
+        }
 
         Matrix translation = MatrixIdentity();
         Matrix rotation = MatrixIdentity();
         Matrix scale = MatrixIdentity();
         Matrix proj = Perspective(60.0f * DEG2RAD, SCR_WIDTH / (float)SCR_HEIGHT, 0.01f, 1000.0f);
-        Matrix view = LookAt(cameraPosition, {}, { 0.0f, 1.0f, 0.0f });
+        Matrix view = LookAt(cameraPosition, cameraPosition + cameraForward, { 0.0f, 1.0f, 0.0f });
         Matrix model = scale * rotation * translation;
         Matrix mvp = model * view * proj;
         
@@ -180,11 +238,11 @@ int main(const char* path)
         glDepthMask(GL_TRUE);
 
         // Translate van
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
         {
             vanRotationY += vanRotationDelta;
         }
-        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        else if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
         {
             vanRotationY -= vanRotationDelta;
         }
@@ -192,11 +250,11 @@ int main(const char* path)
         // Rotate van
         Matrix vanRotation = RotateY(vanRotationY) * RotateX(vanRotationX);
         Vector3 vanForward = Forward(vanRotation);
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
         {
             vanTranslation = vanTranslation + vanForward * vanTranslationDelta;
         }
-        else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        else if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
         {
             vanTranslation = vanTranslation - vanForward * vanTranslationDelta;
         }
