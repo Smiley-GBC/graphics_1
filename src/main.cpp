@@ -222,7 +222,8 @@ int main(const char* path)
         GLint uColor = GL_NONE;
         GLint uTexture = GL_NONE;
         GLint uResolution = GL_NONE;
-        GLint uTransform = GL_NONE;
+        GLint uModel = GL_NONE;
+        GLint uMVP = GL_NONE;
 
         glClearColor(0.25f, 0.75f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -267,12 +268,14 @@ int main(const char* path)
         GLint uObjectColor = glGetUniformLocation(shader, "u_object_color");
         GLint uLightColor = glGetUniformLocation(shader, "u_light_color");
         GLint uAmbientStrength = glGetUniformLocation(shader, "u_ambient_strength");
-        uTransform = glGetUniformLocation(shader, "u_mvp");
+        uMVP = glGetUniformLocation(shader, "u_mvp");
+        uModel = glGetUniformLocation(shader, "u_m");
         glUseProgram(shader);
         glUniform3fv(uObjectColor, 1, (float*)&vanColor);
         glUniform3fv(uLightColor, 1, (float*)&lightColor);
         glUniform1f(uAmbientStrength, ambientStrength);
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniformMatrix4fv(uMVP, 1, GL_TRUE, (float*)&mvp);
+        glUniformMatrix4fv(uModel, 1, GL_TRUE, (float*)&model);
         glBindVertexArray(van.vao);
         glDrawArrays(GL_TRIANGLES, 0, van.vertexCount);
 
@@ -289,10 +292,10 @@ int main(const char* path)
         mvp = Scale(100.0f, 1.0f, 100.0f) * view * proj;
         shader = shaderColor;
         uColor = glGetUniformLocation(shader, "u_color");
-        uTransform = glGetUniformLocation(shader, "u_mvp");
+        uMVP = glGetUniformLocation(shader, "u_mvp");
         glUseProgram(shader);
         glUniform3f(uColor, 0.375f, 0.375f, 0.375f);
-        glUniformMatrix4fv(uTransform, 1, GL_TRUE, &mvp.m0);
+        glUniformMatrix4fv(uMVP, 1, GL_TRUE, &mvp.m0);
         glBindVertexArray(plane.vao);
         glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
 

@@ -14,6 +14,6 @@ void main()
     vec3 ambient = u_light_color * u_ambient_strength; 
     lighting += ambient;
 
-    vec3 finalColor = u_object_color * lighting;
+    vec3 finalColor = u_object_color * (normal * 0.5 + 0.5) * lighting;
     FragColor = vec4(finalColor, 1.0);
 }
