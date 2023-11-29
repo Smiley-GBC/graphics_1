@@ -17,9 +17,9 @@ struct Light {
     float radius;
 };
 
-uniform Material u_material;
-
-
+uniform sampler2D u_diffuse;
+uniform sampler2D u_specular;
+uniform float u_shininess;
 
 uniform Light u_light;
 uniform vec3 u_eye;
@@ -36,20 +36,20 @@ void main()
     vec3 R = reflect(-L, N);
 
     Material material;
-    material.ambient = u_material.ambient;
-    material.diffuse = u_material.diffuse;
-    material.specular = u_material.specular;
-    material.shininess = u_material.shininess;
+    material.ambient = texture(u_diffuse, uv).rgb;
+    material.diffuse = texture(u_diffuse, uv).rgb;
+    material.specular = vec3(1.0, 1.0, 1.0);
+    material.shininess = u_shininess;
 
     float diffuse = max(0.0, dot(N, L));
     float specular = pow(max(dot(V, R), 0.0), material.shininess);
     float attenuation = smoothstep(u_light.radius, 0.0, length(u_light.position - position));
     
     vec3 lighting = vec3(0.0);
-    lighting += u_material.ambient * u_light.ambient;
-    lighting += u_material.diffuse * u_light.diffuse * diffuse;
-    lighting += u_material.specular * u_light.specular * specular;
+    lighting += material.ambient * u_light.ambient;
+    lighting += material.diffuse * u_light.diffuse * diffuse;
+    lighting += material.specular * u_light.specular * specular * texture(u_specular, uv).r;
     lighting *= attenuation;
-
+    
     FragColor = vec4(lighting, 1.0);
 }

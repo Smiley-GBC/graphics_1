@@ -57,6 +57,9 @@
     <ClCompile Include="src\Shader.cpp">
       <Filter>Shader</Filter>
     </ClCompile>
+    <ClCompile Include="src\Materials.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\imgui\imconfig.h">
@@ -100,6 +103,12 @@
     </ClInclude>
     <ClInclude Include="src\Shader.h">
       <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Lights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Materials.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -87,6 +87,7 @@
     <ClCompile Include="inc\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Materials.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Shader.cpp" />
   </ItemGroup>
@@ -101,7 +102,9 @@
     <ClInclude Include="inc\imgui\imstb_textedit.h" />
     <ClInclude Include="inc\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Color.h" />
+    <ClInclude Include="src\Lights.h" />
     <ClInclude Include="src\Lines.h" />
+    <ClInclude Include="src\Materials.h" />
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Orientation.h" />
     <ClInclude Include="src\Shader.h" />
