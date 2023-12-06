@@ -18,12 +18,6 @@ struct Light {
 };
 
 uniform Material u_material;
-
-uniform float u_x;
-uniform float u_x2;
-uniform float u_x3;
-uniform float u_ease;
-
 uniform Light u_light;
 uniform vec3 u_eye;
 
@@ -46,23 +40,7 @@ void main()
 
     float diffuse = max(0.0, dot(N, L));
     float specular = pow(max(dot(V, R), 0.0), material.shininess);
-
-    // t is a value ranging from 0 to 1
-    float t = clamp(1.0 - length(u_light.position - position) / u_light.radius, 0.0, 1.0);
-
-    // We can remap t using functions to make attenuation more interesting!
-    float x = t;
-    float x2 = pow(2.0, t) - 1.0;
-    float x3 = pow(3.0, t) - 1.0;
-    float ease = -(cos(t * 3.1415) - 1) * 0.5;  // same as smoothstep
-
-    x *= u_x;
-    x2 *= u_x2;
-    x3 *= u_x3;
-    ease *= u_ease;
-    float attenuation = x + x2 + x3 + ease;
-
-    //float attenuation = smoothstep(u_light.radius, 0.0, length(u_light.position - position));
+    float attenuation = smoothstep(u_light.radius, 0.0, length(u_light.position - position));
     
     vec3 lighting = vec3(0.0);
     lighting += u_material.ambient * u_light.ambient;

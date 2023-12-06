@@ -23,14 +23,6 @@ void OnInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
 
-enum Attenuation
-{
-    LINEAR,
-    EXP2,
-    EXP3,
-    EASE
-} attenuation;
-
 GLuint CreateTexture(const char* path)
 {
     GLuint texture;
@@ -93,42 +85,6 @@ void SendLight(Light light, GLint shader)
     GLint uDiffuse = glGetUniformLocation(shader, "u_light.diffuse");
     GLint uSpecular = glGetUniformLocation(shader, "u_light.specular");
     GLint uRadius = glGetUniformLocation(shader, "u_light.radius");
-
-    GLint uX = glGetUniformLocation(shader, "u_x");
-    GLint uX2 = glGetUniformLocation(shader, "u_x2");
-    GLint uX3 = glGetUniformLocation(shader, "u_x3");
-    GLint uEase = glGetUniformLocation(shader, "u_ease");
-
-    switch (attenuation)
-    {
-    case LINEAR:
-        glUniform1f(uX, 1.0f);
-        glUniform1f(uX2, 0.0f);
-        glUniform1f(uX3, 0.0f);
-        glUniform1f(uEase, 0.0f);
-        break;
-
-    case EXP2:
-        glUniform1f(uX, 0.0f);
-        glUniform1f(uX2, 1.0f);
-        glUniform1f(uX3, 0.0f);
-        glUniform1f(uEase, 0.0f);
-        break;
-
-    case EXP3:
-        glUniform1f(uX, 0.0f);
-        glUniform1f(uX2, 0.0f);
-        glUniform1f(uX3, 1.0f);
-        glUniform1f(uEase, 0.0f);
-        break;
-
-    case EASE:
-        glUniform1f(uX, 0.0f);
-        glUniform1f(uX2, 0.0f);
-        glUniform1f(uX3, 0.0f);
-        glUniform1f(uEase, 1.0f);
-        break;
-    }
 
     glUniform3fv(uPosition, 1, (float*)&light.position);
     glUniform3fv(uAmbient, 1, (float*)&light.ambient);
@@ -380,13 +336,6 @@ int main(const char* path)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        ImGui::SeparatorText("Attenuation Select");
-        ImGui::RadioButton("x", (int*)&attenuation, LINEAR); ImGui::SameLine();
-        ImGui::RadioButton("x2", (int*)&attenuation, EXP2); ImGui::SameLine();
-        ImGui::RadioButton("x3", (int*)&attenuation, EXP3); ImGui::SameLine();
-        ImGui::RadioButton("ease", (int*)&attenuation, EASE);
-        ImGui::NewLine();
 
         ImGui::SeparatorText("Shader Select");
         ImGui::RadioButton("Gouraud", (int*)&shaderIndex, GOURAUD); ImGui::SameLine();
