@@ -78,7 +78,7 @@ void SendMaterialTexture(GLuint diffuse, GLuint specular, float shininess, GLuin
     glUniform1f(uShininess, shininess);
 }
 
-void SendLight(Light light, GLint shader)
+void SendLight(PointLight light, GLint shader)
 {
     GLint uPosition = glGetUniformLocation(shader, "u_light.position");
     GLint uAmbient = glGetUniformLocation(shader, "u_light.ambient");
@@ -183,7 +183,7 @@ int main(const char* path)
     int lightIndex = 2;
     bool lightVolume = false;
 
-    Light lights[5];
+    PointLight lights[5];
     Vector3 positons[5];
     Material materials[5];
     materials[0] = chrome;
@@ -301,7 +301,7 @@ int main(const char* path)
 
         // Active light
         {
-            const Light& light = lights[lightIndex];
+            const PointLight& light = lights[lightIndex];
             Matrix model = Translate(light.position.x, light.position.y, light.position.z);
             Matrix mvp = model * view * proj;
             glUseProgram(shaderColor);
@@ -356,7 +356,7 @@ int main(const char* path)
         static float diffuse = 1.0f;
         static float specular = 1.0f;
         bool change = false;
-        Light& light = lights[lightIndex];
+        PointLight& light = lights[lightIndex];
         ImGui::SeparatorText("Light Editor");
         change |= ImGui::ColorPicker3("Color", (float*)&color);
         change |= ImGui::SliderFloat("Ambient", &ambient, 0.0f, 1.0f);
