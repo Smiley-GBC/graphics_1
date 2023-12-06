@@ -93,6 +93,19 @@ void SendLight(PointLight light, GLint shader)
     glUniform1f(uRadius, light.radius);
 }
 
+void SendLight(DirectionLight light, GLint shader)
+{
+    GLint uDirection = glGetUniformLocation(shader, "u_direction_light.direction");
+    GLint uAmbient = glGetUniformLocation(shader, "u_direction_light.ambient");
+    GLint uDiffuse = glGetUniformLocation(shader, "u_direction_light.diffuse");
+    GLint uSpecular = glGetUniformLocation(shader, "u_direction_light.specular");
+
+    glUniform3fv(uDirection, 1, (float*)&light.direction);
+    glUniform3fv(uAmbient, 1, (float*)&light.ambient);
+    glUniform3fv(uDiffuse, 1, (float*)&light.diffuse);
+    glUniform3fv(uSpecular, 1, (float*)&light.specular);
+}
+
 void SendTransforms(Matrix mvp, Matrix model, Vector3 eye, GLint shader)
 {
     GLint uMVP = glGetUniformLocation(shader, "u_mvp");
@@ -183,6 +196,7 @@ int main(const char* path)
     int lightIndex = 2;
     bool lightVolume = false;
 
+    DirectionLight sun = CreateDirectionLight({ 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, 0.1f);
     PointLight lights[5];
     Vector3 positons[5];
     Material materials[5];
@@ -291,6 +305,7 @@ int main(const char* path)
             Matrix mvp = model * view * proj;
             SendTransforms(mvp, model, cameraPosition, ct4Shader);
             SendLight(lights[i], ct4Shader);
+            SendLight(sun, ct4Shader);
             if (shaderIndex == PHONG_MAPS)
                 SendMaterialTexture(texCt4[i], texCt4Specular, SPECULAR_POWER, ct4Shader);
             else
@@ -343,12 +358,13 @@ int main(const char* path)
         ImGui::RadioButton("Phong Map", (int*)&shaderIndex, PHONG_MAPS);
         ImGui::NewLine();
 
-        ImGui::SeparatorText("Light Select");
+        ImGui::SliderFloat3("Sun Direction", (float*)&sun.direction, -1.0f, 1.0f);
         ImGui::RadioButton("Light 1", (int*)&lightIndex, 0); ImGui::SameLine();
         ImGui::RadioButton("Light 2", (int*)&lightIndex, 1); ImGui::SameLine();
         ImGui::RadioButton("Light 3", (int*)&lightIndex, 2); ImGui::SameLine();
         ImGui::RadioButton("Light 4", (int*)&lightIndex, 3); ImGui::SameLine();
-        ImGui::RadioButton("Light 5", (int*)&lightIndex, 4);
+        ImGui::RadioButton("Light 5", (int*)&lightIndex, 4); ImGui::SameLine();
+        ImGui::RadioButton("Sun", (int*)&lightIndex, 5);
         ImGui::NewLine();
 
         static Vector3 color = Vector3One();
@@ -356,7 +372,7 @@ int main(const char* path)
         static float diffuse = 1.0f;
         static float specular = 1.0f;
         bool change = false;
-        PointLight& light = lights[lightIndex];
+        PointLight& light = lights[lightIndex % 4];
         ImGui::SeparatorText("Light Editor");
         change |= ImGui::ColorPicker3("Color", (float*)&color);
         change |= ImGui::SliderFloat("Ambient", &ambient, 0.0f, 1.0f);
@@ -364,9 +380,18 @@ int main(const char* path)
         change |= ImGui::SliderFloat("Specular", &specular, 0.0f, 1.0f);
         if (change)
         {
-            light.ambient = color * ambient;
-            light.diffuse = color * diffuse;
-            light.specular = color * specular;
+            if (lightIndex < 5)
+            {
+                light.ambient = color * ambient;
+                light.diffuse = color * diffuse;
+                light.specular = color * specular;
+            }
+            else
+            {
+                sun.ambient = color * ambient;
+                sun.diffuse = color * diffuse;
+                sun.specular = color * specular;
+            }
         }
         
         ImGui::NewLine();
