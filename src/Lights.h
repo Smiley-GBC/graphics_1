@@ -1,5 +1,6 @@
 #pragma once
 #include <Math.h>
+#include <array>
 
 struct PointLight {
     Vector3 position{};
@@ -15,6 +16,12 @@ struct DirectionLight
     Vector3 ambient{};
     Vector3 diffuse{};
     Vector3 specular{};
+};
+
+struct Lights
+{
+    DirectionLight directionLight;
+    std::array<PointLight, 5> pointLights;
 };
 
 inline PointLight CreatePointLight(Vector3 position, Vector3 color, float ambient, float radius)

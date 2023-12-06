@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <Math.h>
 #include <iostream>
+#include <string>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -106,6 +107,41 @@ void SendLight(DirectionLight light, GLint shader)
     glUniform3fv(uSpecular, 1, (float*)&light.specular);
 }
 
+void SendLights(const Lights& lights, GLint shader)
+{
+    // Direction light
+    {
+        GLint uDirection = glGetUniformLocation(shader, "u_direction_light.direction");
+        GLint uAmbient = glGetUniformLocation(shader, "u_direction_light.ambient");
+        GLint uDiffuse = glGetUniformLocation(shader, "u_direction_light.diffuse");
+        GLint uSpecular = glGetUniformLocation(shader, "u_direction_light.specular");
+
+        glUniform3fv(uDirection, 1, (float*)&lights.directionLight.direction);
+        glUniform3fv(uAmbient, 1, (float*)&lights.directionLight.ambient);
+        glUniform3fv(uDiffuse, 1, (float*)&lights.directionLight.diffuse);
+        glUniform3fv(uSpecular, 1, (float*)&lights.directionLight.specular);
+    }
+    
+    // Point lights
+    for (size_t i = 0; i < lights.pointLights.size(); i++)
+    {
+        using std::string;
+        std::string prefix = "u_point_lights[" + std::to_string(i) + "]";
+        //string position = prefix + ".position";
+        GLint uPosition = glGetUniformLocation(shader, (prefix + ".position").c_str());
+        GLint uAmbient = glGetUniformLocation(shader, (prefix + ".ambient").c_str());
+        GLint uDiffuse = glGetUniformLocation(shader, (prefix + ".diffuse").c_str());
+        GLint uSpecular = glGetUniformLocation(shader, (prefix + ".specular").c_str());
+        GLint uRadius = glGetUniformLocation(shader, (prefix + ".radius").c_str());
+
+        glUniform3fv(uPosition, 1, (float*)&lights.pointLights[i].position);
+        glUniform3fv(uAmbient, 1, (float*)&lights.pointLights[i].ambient);
+        glUniform3fv(uDiffuse, 1, (float*)&lights.pointLights[i].diffuse);
+        glUniform3fv(uSpecular, 1, (float*)&lights.pointLights[i].specular);
+        glUniform1f(uRadius, lights.pointLights[i].radius);
+    }
+}
+
 void SendTransforms(Matrix mvp, Matrix model, Vector3 eye, GLint shader)
 {
     GLint uMVP = glGetUniformLocation(shader, "u_mvp");
@@ -196,8 +232,7 @@ int main(const char* path)
     int lightIndex = 2;
     bool lightVolume = false;
 
-    DirectionLight sun = CreateDirectionLight({ 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, 0.1f);
-    PointLight lights[5];
+    Lights lights;
     Vector3 positons[5];
     Material materials[5];
     materials[0] = chrome;
@@ -205,6 +240,7 @@ int main(const char* path)
     materials[2] = turquoise;
     materials[3] = ruby;
     materials[4] = brass;
+    lights.directionLight = CreateDirectionLight({ 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, 0.1f);
     for (size_t i = 0; i < 5; i++)
     {
         static float x = -60.0f;
@@ -212,11 +248,11 @@ int main(const char* path)
         x += 30.0f;
 
         Vector3 lightColor{ 1.0f, 1.0f, 1.0f };
-        lights[i].position = positons[i] + Vector3{ 0.0f, 20.0f, 0.0f };
-        lights[i].ambient = lightColor;
-        lights[i].diffuse = lightColor;
-        lights[i].specular = lightColor;
-        lights[i].radius = 30.0f;
+        lights.pointLights[i].position = positons[i] + Vector3{ 0.0f, 20.0f, 0.0f };
+        lights.pointLights[i].ambient = lightColor;
+        lights.pointLights[i].diffuse = lightColor;
+        lights.pointLights[i].specular = lightColor;
+        lights.pointLights[i].radius = 30.0f;
     }
 
     Vector3 cameraPosition{ 60.0f, 10.0f, 25.0f };
@@ -304,8 +340,9 @@ int main(const char* path)
             Matrix model = Translate(positons[i].x, positons[i].y, positons[i].z);
             Matrix mvp = model * view * proj;
             SendTransforms(mvp, model, cameraPosition, ct4Shader);
-            SendLight(lights[i], ct4Shader);
-            SendLight(sun, ct4Shader);
+            //SendLight(lights[i], ct4Shader);
+            //SendLight(sun, ct4Shader);
+            SendLights(lights, ct4Shader);
             if (shaderIndex == PHONG_MAPS)
                 SendMaterialTexture(texCt4[i], texCt4Specular, SPECULAR_POWER, ct4Shader);
             else
@@ -316,24 +353,28 @@ int main(const char* path)
 
         // Active light
         {
-            const PointLight& light = lights[lightIndex];
-            Matrix model = Translate(light.position.x, light.position.y, light.position.z);
-            Matrix mvp = model * view * proj;
-            glUseProgram(shaderColor);
-            SendTransforms(mvp, model, cameraPosition, shaderColor);
-            glUniform3fv(glGetUniformLocation(shaderColor, "u_color"), 1, (float*)&light.diffuse);
-            glBindVertexArray(cube.vao);
-            glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
-
-            if (lightVolume)
+            // Can't visualize the direction light
+            if (lightIndex < 5)
             {
-                model = Scale(light.radius, light.radius, light.radius) * model;
-                mvp = model * view * proj;
+                const PointLight& light = lights.pointLights[lightIndex];
+                Matrix model = Translate(light.position.x, light.position.y, light.position.z);
+                Matrix mvp = model * view * proj;
+                glUseProgram(shaderColor);
                 SendTransforms(mvp, model, cameraPosition, shaderColor);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glBindVertexArray(sphere.vao);
-                glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                glUniform3fv(glGetUniformLocation(shaderColor, "u_color"), 1, (float*)&light.diffuse);
+                glBindVertexArray(cube.vao);
+                glDrawArrays(GL_TRIANGLES, 0, cube.vertexCount);
+
+                if (lightVolume)
+                {
+                    model = Scale(light.radius, light.radius, light.radius) * model;
+                    mvp = model * view * proj;
+                    SendTransforms(mvp, model, cameraPosition, shaderColor);
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                    glBindVertexArray(sphere.vao);
+                    glDrawArrays(GL_TRIANGLES, 0, sphere.vertexCount);
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                }
             }
         }
 
@@ -358,7 +399,7 @@ int main(const char* path)
         ImGui::RadioButton("Phong Map", (int*)&shaderIndex, PHONG_MAPS);
         ImGui::NewLine();
 
-        ImGui::SliderFloat3("Sun Direction", (float*)&sun.direction, -1.0f, 1.0f);
+        ImGui::SliderFloat3("Sun Direction", (float*)&lights.directionLight.direction, -1.0f, 1.0f);
         ImGui::RadioButton("Light 1", (int*)&lightIndex, 0); ImGui::SameLine();
         ImGui::RadioButton("Light 2", (int*)&lightIndex, 1); ImGui::SameLine();
         ImGui::RadioButton("Light 3", (int*)&lightIndex, 2); ImGui::SameLine();
@@ -372,7 +413,7 @@ int main(const char* path)
         static float diffuse = 1.0f;
         static float specular = 1.0f;
         bool change = false;
-        PointLight& light = lights[lightIndex % 4];
+        //PointLight& light = lights[lightIndex % 4];
         ImGui::SeparatorText("Light Editor");
         change |= ImGui::ColorPicker3("Color", (float*)&color);
         change |= ImGui::SliderFloat("Ambient", &ambient, 0.0f, 1.0f);
@@ -382,23 +423,27 @@ int main(const char* path)
         {
             if (lightIndex < 5)
             {
-                light.ambient = color * ambient;
-                light.diffuse = color * diffuse;
-                light.specular = color * specular;
+                lights.pointLights[lightIndex].ambient = color * ambient;
+                lights.pointLights[lightIndex].diffuse = color * diffuse;
+                lights.pointLights[lightIndex].specular = color * specular;
             }
             else
             {
-                sun.ambient = color * ambient;
-                sun.diffuse = color * diffuse;
-                sun.specular = color * specular;
+                lights.directionLight.ambient = color * ambient;
+                lights.directionLight.diffuse = color * diffuse;
+                lights.directionLight.specular = color * specular;
             }
         }
         
         ImGui::NewLine();
-        ImGui::SliderFloat3("Position", (float*)&light.position, -100.0f, 100.0f);
-        ImGui::SliderFloat(" Radius", &light.radius, 1.0f, 50.0f);
-        ImGui::Checkbox("Volume", &lightVolume);
-        ImGui::NewLine();
+        if (lightIndex < 5)
+        {
+            PointLight& light = lights.pointLights[lightIndex];
+            ImGui::SliderFloat3("Position", (float*)&light.position, -100.0f, 100.0f);
+            ImGui::SliderFloat(" Radius", &light.radius, 1.0f, 50.0f);
+            ImGui::Checkbox("Volume", &lightVolume);
+            ImGui::NewLine();
+        }
 
         ImGui::SeparatorText("Camera");
         ImGui::SliderFloat3("Camera Position", (float*)&cameraPosition, -100.0f, 100.0f);
