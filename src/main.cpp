@@ -79,49 +79,8 @@ void SendMaterialTexture(GLuint diffuse, GLuint specular, float shininess, GLuin
     glUniform1f(uShininess, shininess);
 }
 
-void SendLight(PointLight light, GLint shader)
-{
-    GLint uPosition = glGetUniformLocation(shader, "u_light.position");
-    GLint uAmbient = glGetUniformLocation(shader, "u_light.ambient");
-    GLint uDiffuse = glGetUniformLocation(shader, "u_light.diffuse");
-    GLint uSpecular = glGetUniformLocation(shader, "u_light.specular");
-    GLint uRadius = glGetUniformLocation(shader, "u_light.radius");
-
-    glUniform3fv(uPosition, 1, (float*)&light.position);
-    glUniform3fv(uAmbient, 1, (float*)&light.ambient);
-    glUniform3fv(uDiffuse, 1, (float*)&light.diffuse);
-    glUniform3fv(uSpecular, 1, (float*)&light.specular);
-    glUniform1f(uRadius, light.radius);
-}
-
-void SendLight(DirectionLight light, GLint shader)
-{
-    GLint uDirection = glGetUniformLocation(shader, "u_direction_light.direction");
-    GLint uAmbient = glGetUniformLocation(shader, "u_direction_light.ambient");
-    GLint uDiffuse = glGetUniformLocation(shader, "u_direction_light.diffuse");
-    GLint uSpecular = glGetUniformLocation(shader, "u_direction_light.specular");
-
-    glUniform3fv(uDirection, 1, (float*)&light.direction);
-    glUniform3fv(uAmbient, 1, (float*)&light.ambient);
-    glUniform3fv(uDiffuse, 1, (float*)&light.diffuse);
-    glUniform3fv(uSpecular, 1, (float*)&light.specular);
-}
-
 void SendLights(const Lights& lights, GLint shader)
 {
-    // Direction light
-    {
-        GLint uDirection = glGetUniformLocation(shader, "u_direction_light.direction");
-        GLint uAmbient = glGetUniformLocation(shader, "u_direction_light.ambient");
-        GLint uDiffuse = glGetUniformLocation(shader, "u_direction_light.diffuse");
-        GLint uSpecular = glGetUniformLocation(shader, "u_direction_light.specular");
-
-        glUniform3fv(uDirection, 1, (float*)&lights.directionLight.direction);
-        glUniform3fv(uAmbient, 1, (float*)&lights.directionLight.ambient);
-        glUniform3fv(uDiffuse, 1, (float*)&lights.directionLight.diffuse);
-        glUniform3fv(uSpecular, 1, (float*)&lights.directionLight.specular);
-    }
-    
     // Point lights
     for (size_t i = 0; i < lights.pointLights.size(); i++)
     {
@@ -139,6 +98,38 @@ void SendLights(const Lights& lights, GLint shader)
         glUniform3fv(uDiffuse, 1, (float*)&lights.pointLights[i].diffuse);
         glUniform3fv(uSpecular, 1, (float*)&lights.pointLights[i].specular);
         glUniform1f(uRadius, lights.pointLights[i].radius);
+    }
+
+    // Direction light
+    {
+        GLint uDirection = glGetUniformLocation(shader, "u_direction_light.direction");
+        GLint uAmbient = glGetUniformLocation(shader, "u_direction_light.ambient");
+        GLint uDiffuse = glGetUniformLocation(shader, "u_direction_light.diffuse");
+        GLint uSpecular = glGetUniformLocation(shader, "u_direction_light.specular");
+
+        glUniform3fv(uDirection, 1, (float*)&lights.directionLight.direction);
+        glUniform3fv(uAmbient, 1, (float*)&lights.directionLight.ambient);
+        glUniform3fv(uDiffuse, 1, (float*)&lights.directionLight.diffuse);
+        glUniform3fv(uSpecular, 1, (float*)&lights.directionLight.specular);
+    }
+
+    // Spot light
+    {
+        {
+            GLint uPosition = glGetUniformLocation(shader, "u_spot_light.position");
+            GLint uDirection = glGetUniformLocation(shader, "u_spot_light.direction");
+            GLint uCutoff = glGetUniformLocation(shader, "u_spot_light.cutoff");
+            GLint uAmbient = glGetUniformLocation(shader, "u_spot_light.ambient");
+            GLint uDiffuse = glGetUniformLocation(shader, "u_spot_light.diffuse");
+            GLint uSpecular = glGetUniformLocation(shader, "u_spot_light.specular");
+
+            glUniform3fv(uPosition, 1, (float*)&lights.spotLight.position);
+            glUniform3fv(uDirection, 1, (float*)&lights.spotLight.direction);
+            glUniform1f(uCutoff, lights.spotLight.cutoff);
+            glUniform3fv(uAmbient, 1, (float*)&lights.spotLight.ambient);
+            glUniform3fv(uDiffuse, 1, (float*)&lights.spotLight.diffuse);
+            glUniform3fv(uSpecular, 1, (float*)&lights.spotLight.specular);
+        }
     }
 }
 
@@ -240,19 +231,14 @@ int main(const char* path)
     materials[2] = turquoise;
     materials[3] = ruby;
     materials[4] = brass;
+    lights.spotLight = CreateSpotLight({}, {}, Vector3One(), 0.1f, 45.0f);
     lights.directionLight = CreateDirectionLight({ 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, 0.1f);
     for (size_t i = 0; i < 5; i++)
     {
         static float x = -60.0f;
         positons[i] = Vector3{ x, 0.0f, 0.0f };
         x += 30.0f;
-
-        Vector3 lightColor{ 1.0f, 1.0f, 1.0f };
-        lights.pointLights[i].position = positons[i] + Vector3{ 0.0f, 20.0f, 0.0f };
-        lights.pointLights[i].ambient = lightColor;
-        lights.pointLights[i].diffuse = lightColor;
-        lights.pointLights[i].specular = lightColor;
-        lights.pointLights[i].radius = 30.0f;
+        lights.pointLights[i] = CreatePointLight({ x, 20.0f, 0.0f }, Vector3One(), 0.1f, 30.0f);
     }
 
     Vector3 cameraPosition{ 60.0f, 10.0f, 25.0f };
@@ -325,6 +311,16 @@ int main(const char* path)
         {
             cameraPosition = cameraPosition - cameraUp * linearDelta;
         }
+
+        lights.spotLight.position = cameraPosition;
+        lights.spotLight.direction = cameraForward;
+
+        Vector3 rainbow;
+        rainbow.x = cosf(tt * PI * 0.33f) * 0.5 + 0.5f;
+        rainbow.y = cosf(tt * PI * 0.66f) * 0.5 + 0.5f;
+        rainbow.z = cosf(tt * PI * 1.00f) * 0.5 + 0.5f;
+        rainbow = rainbow * 0.5f;
+        lights.spotLight.ambient = lights.spotLight.diffuse = lights.spotLight.specular = rainbow;
         
         Matrix proj = Perspective(60.0f * DEG2RAD, SCR_WIDTH / (float)SCR_HEIGHT, 0.01f, 1000.0f);
         //Matrix proj = Ortho(-100.0f, 100.0f, -100.0f, 100.0f, -100.0f, 100.0f);
@@ -340,8 +336,6 @@ int main(const char* path)
             Matrix model = Translate(positons[i].x, positons[i].y, positons[i].z);
             Matrix mvp = model * view * proj;
             SendTransforms(mvp, model, cameraPosition, ct4Shader);
-            //SendLight(lights[i], ct4Shader);
-            //SendLight(sun, ct4Shader);
             SendLights(lights, ct4Shader);
             if (shaderIndex == PHONG_MAPS)
                 SendMaterialTexture(texCt4[i], texCt4Specular, SPECULAR_POWER, ct4Shader);
@@ -349,6 +343,14 @@ int main(const char* path)
                 SendMaterial(materials[i], ct4Shader);
             glBindVertexArray(ct4.vao);
             glDrawArrays(GL_TRIANGLES, 0, ct4.vertexCount);
+
+            // Ground plane
+            model = Scale(100.0f, 1.0f, 100.0f);
+            mvp = model * view * proj;
+            SendTransforms(mvp, model, cameraPosition, ct4Shader);
+            SendMaterial(pearl, ct4Shader);
+            glBindVertexArray(plane.vao);
+            glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
         }
 
         // Active light
@@ -378,17 +380,6 @@ int main(const char* path)
             }
         }
 
-        // Ground Plane
-        {
-            Matrix model = Scale(100.0f, 1.0f, 100.0f);
-            Matrix mvp = model * view * proj;
-            glUseProgram(shaderColor);
-            SendTransforms(mvp, model, cameraPosition, shaderColor);
-            glUniform3f(glGetUniformLocation(shaderColor, "u_color"), 0.375f, 0.375f, 0.375f);
-            glBindVertexArray(plane.vao);
-            glDrawArrays(GL_TRIANGLES, 0, plane.vertexCount);
-        }
-
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -409,7 +400,7 @@ int main(const char* path)
         ImGui::NewLine();
 
         static Vector3 color = Vector3One();
-        static float ambient = 1.0f;
+        static float ambient = 0.1f;
         static float diffuse = 1.0f;
         static float specular = 1.0f;
         bool change = false;
