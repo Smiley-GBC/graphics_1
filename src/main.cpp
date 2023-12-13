@@ -161,6 +161,17 @@ enum Effect : int
     PHONG_MAPS
 };
 
+Matrix Doughnut(float tt, float angularSpeedDegrees, float radius)
+{
+    float rotation = tt * angularSpeedDegrees * DEG2RAD;
+    float x = cosf(tt * PI * 2.0f) * radius;
+    float z = sinf(tt * PI * 2.0f) * radius;
+    Matrix r = RotateY(-rotation);
+    Matrix t = Translate(x, 0.0f, z);
+    return r * t;
+    //Orientate({ x, 0.0f, z });
+}
+
 int main(const char* path)
 {
     CreateMaterials();
@@ -334,6 +345,10 @@ int main(const char* path)
         {
             // Cars
             Matrix model = Translate(positons[i].x, positons[i].y, positons[i].z);
+            if (i == 2)
+                model = Doughnut(tt, 360.0f, 15.0f);
+            if (i == 3)
+                model = Translate(10.0f, 0.0f, 0.0f) * Doughnut(tt, 360.0f, 15.0f);
             Matrix mvp = model * view * proj;
             SendTransforms(mvp, model, cameraPosition, ct4Shader);
             SendLights(lights, ct4Shader);
